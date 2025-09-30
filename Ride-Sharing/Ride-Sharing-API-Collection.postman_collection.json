@@ -1,0 +1,938 @@
+{
+  "info": {
+    "name": "Ride Sharing API - Complete Test Collection",
+    "description": "Comprehensive API testing for Ride Sharing application with all endpoints",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Register Driver",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"John\",\n  \"lastName\": \"Driver\",\n  \"phoneNumber\": \"+1234567890\",\n  \"email\": \"john.driver@example.com\",\n  \"password\": \"password123\",\n  \"role\": \"DRIVER\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "register"]
+            }
+          }
+        },
+        {
+          "name": "Register Passenger",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"Jane\",\n  \"lastName\": \"Passenger\",\n  \"phoneNumber\": \"+1987654321\",\n  \"email\": \"jane.passenger@example.com\",\n  \"password\": \"password123\",\n  \"role\": \"USER\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "register"]
+            }
+          }
+        },
+        {
+          "name": "Verify Driver OTP",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.environment.set(\"driverToken\", responseJson.data.accessToken);",
+                  "    pm.test(\"Driver token saved\", function () {",
+                  "        pm.expect(responseJson.data.accessToken).to.not.be.undefined;",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phoneNumber\": \"+1234567890\",\n  \"otp\": \"123456\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/verify-otp",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "verify-otp"]
+            }
+          }
+        },
+        {
+          "name": "Verify Passenger OTP",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.environment.set(\"passengerToken\", responseJson.data.accessToken);",
+                  "    pm.test(\"Passenger token saved\", function () {",
+                  "        pm.expect(responseJson.data.accessToken).to.not.be.undefined;",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phoneNumber\": \"+1987654321\",\n  \"otp\": \"654321\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/verify-otp",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "verify-otp"]
+            }
+          }
+        },
+        {
+          "name": "Login Driver",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phoneNumber\": \"+1234567890\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "login"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin Authentication & Management",
+      "item": [
+        {
+          "name": "Register Admin",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"Admin\",\n  \"lastName\": \"Manager\",\n  \"phoneNumber\": \"+1111111111\",\n  \"email\": \"admin@ridesharing.com\",\n  \"password\": \"admin123\",\n  \"role\": \"ADMIN\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "register"]
+            }
+          }
+        },
+        {
+          "name": "Verify Admin OTP",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.environment.set(\"adminToken\", responseJson.data.accessToken);",
+                  "    pm.test(\"Admin token saved\", function () {",
+                  "        pm.expect(responseJson.data.accessToken).to.not.be.undefined;",
+                  "    });",
+                  "    console.log(\"🔑 Admin authenticated successfully!\");",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phoneNumber\": \"+1111111111\",\n  \"otp\": \"111111\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/verify-otp",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "verify-otp"]
+            }
+          }
+        },
+        {
+          "name": "Login Admin",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.environment.set(\"adminToken\", responseJson.data.accessToken);",
+                  "    console.log(\"🔑 Admin logged in successfully!\");",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phoneNumber\": \"+1111111111\",\n  \"password\": \"admin123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "Get All Users (Admin Only)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Admin can access all users\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.expect(responseJson).to.be.an('array');",
+                  "    console.log(\"📋 Total users in system: \" + responseJson.length);",
+                  "    ",
+                  "    // Count users by role",
+                  "    let drivers = responseJson.filter(user => user.role === 'DRIVER').length;",
+                  "    let passengers = responseJson.filter(user => user.role === 'USER').length;",
+                  "    let admins = responseJson.filter(user => user.role === 'ADMIN').length;",
+                  "    ",
+                  "    console.log(\"🚗 Drivers: \" + drivers);",
+                  "    console.log(\"👥 Passengers: \" + passengers);",
+                  "    console.log(\"👨‍💼 Admins: \" + admins);",
+                  "    ",
+                  "    // Save first driver ID for testing",
+                  "    let firstDriver = responseJson.find(user => user.role === 'DRIVER');",
+                  "    if (firstDriver) {",
+                  "        pm.environment.set(\"userId\", firstDriver.id);",
+                  "        console.log(\"💾 Saved first driver ID: \" + firstDriver.id);",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/all",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "all"]
+            }
+          }
+        },
+        {
+          "name": "Get User by ID (Admin Only)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Admin can access specific user\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    const responseJson = pm.response.json();",
+                  "    console.log(\"👤 User Details Retrieved:\");",
+                  "    console.log(\"   Name: \" + responseJson.firstName + \" \" + responseJson.lastName);",
+                  "    console.log(\"   Role: \" + responseJson.role);",
+                  "    console.log(\"   Phone: \" + responseJson.phoneNumber);",
+                  "    console.log(\"   Email: \" + responseJson.email);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/{{userId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "{{userId}}"]
+            }
+          }
+        },
+        {
+          "name": "Delete User (Admin Only)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Admin can delete user\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    console.log(\"🗑️ User deleted successfully by admin\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/{{userId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "{{userId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Driver Profile & Verification",
+      "item": [
+        {
+          "name": "Check Driver Profile Status",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    const responseJson = pm.response.json();",
+                  "    const hasProfile = responseJson.data;",
+                  "    ",
+                  "    pm.test(\"Profile status check\", function () {",
+                  "        if (hasProfile) {",
+                  "            console.log(\"✅ Driver profile is complete\");",
+                  "        } else {",
+                  "            console.log(\"❌ Driver profile needs to be completed\");",
+                  "        }",
+                  "        pm.expect(typeof hasProfile).to.eql('boolean');",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{driverToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/driver/details/check",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "driver", "details", "check"]
+            }
+          }
+        },
+        {
+          "name": "Add Driver Details",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Driver details added successfully\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.environment.set(\"driverDetailId\", responseJson.data.id);",
+                  "    console.log(\"📋 Driver profile created with ID: \" + responseJson.data.id);",
+                  "    console.log(\"🔍 Verification Status: \" + (responseJson.data.isVerified ? \"✅ Verified\" : \"⏳ Pending\"));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{driverToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"licenseNumber\": \"DL123456789\",\n  \"licenseExpiryDate\": \"2026-12-31\",\n  \"carNumber\": \"MH01AB1234\",\n  \"carModel\": \"Honda City\",\n  \"carColor\": \"White\",\n  \"carYear\": 2023,\n  \"insuranceNumber\": \"INS987654321\",\n  \"insuranceExpiryDate\": \"2026-06-30\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/driver/details",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "driver", "details"]
+            }
+          }
+        },
+        {
+          "name": "Get Driver Details with Verification Status",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Get driver details successful\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    const responseJson = pm.response.json();",
+                  "    const driverData = responseJson.data;",
+                  "    ",
+                  "    pm.test(\"Verification status check\", function () {",
+                  "        pm.expect(driverData).to.have.property('isVerified');",
+                  "        ",
+                  "        if (driverData.isVerified) {",
+                  "            console.log(\"🎉 Driver is VERIFIED! Can post rides.\");",
+                  "        } else {",
+                  "            console.log(\"⏳ Driver verification PENDING. Cannot post rides yet.\");",
+                  "        }",
+                  "    });",
+                  "    ",
+                  "    // Save driver detail ID for admin verification",
+                  "    if (driverData.id) {",
+                  "        pm.environment.set(\"driverDetailId\", driverData.id);",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{driverToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/driver/details",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "driver", "details"]
+            }
+          }
+        },
+        {
+          "name": "Update Driver Details",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{driverToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"licenseNumber\": \"DL123456789\",\n  \"licenseExpiryDate\": \"2027-12-31\",\n  \"carNumber\": \"MH01AB1234\",\n  \"carModel\": \"Honda City VX CVT\",\n  \"carColor\": \"Pearl White\",\n  \"carYear\": 2023,\n  \"insuranceNumber\": \"INS987654321\",\n  \"insuranceExpiryDate\": \"2027-06-30\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/driver/details",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "driver", "details"]
+            }
+          }
+        },
+        {
+          "name": "Admin: Verify Driver",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Driver verification successful\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.expect(responseJson.data.isVerified).to.be.true;",
+                  "    console.log(\"🎉 Driver has been VERIFIED by admin!\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/driver/verify/{{driverDetailId}}?verified=true",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "driver", "verify", "{{driverDetailId}}"],
+              "query": [
+                {
+                  "key": "verified",
+                  "value": "true"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Admin: Reject Driver Verification",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Driver verification rejection successful\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.expect(responseJson.data.isVerified).to.be.false;",
+                  "    console.log(\"❌ Driver verification has been REJECTED by admin.\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/driver/verify/{{driverDetailId}}?verified=false",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "driver", "verify", "{{driverDetailId}}"],
+              "query": [
+                {
+                  "key": "verified",
+                  "value": "false"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Ride Management (Driver)",
+      "item": [
+        {
+          "name": "Post New Ride",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.environment.set(\"rideId\", responseJson.data.id);",
+                  "    pm.test(\"Ride ID saved\", function () {",
+                  "        pm.expect(responseJson.data.id).to.not.be.undefined;",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{driverToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"source\": \"Mumbai\",\n  \"destination\": \"Pune\",\n  \"departureDate\": \"2025-09-25T10:00:00\",\n  \"availableSeats\": 3,\n  \"pricePerSeat\": 500.00,\n  \"notes\": \"AC car, comfortable ride. Pickup from Bandra.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/rides",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "rides"]
+            }
+          }
+        },
+        {
+          "name": "Get My Rides",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{driverToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/rides/my-rides",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "rides", "my-rides"]
+            }
+          }
+        },
+        {
+          "name": "Get Ride Bookings",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{driverToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/rides/{{rideId}}/bookings",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "rides", "{{rideId}}", "bookings"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Ride Search (Passenger)",
+      "item": [
+        {
+          "name": "Search All Rides",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{passengerToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"page\": 0,\n  \"size\": 10,\n  \"sortBy\": \"departureDate\",\n  \"sortDirection\": \"ASC\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/rides/search",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "rides", "search"]
+            }
+          }
+        },
+        {
+          "name": "Search Rides by Route",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{passengerToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"source\": \"Mumbai\",\n  \"destination\": \"Pune\",\n  \"page\": 0,\n  \"size\": 10,\n  \"sortBy\": \"departureDate\",\n  \"sortDirection\": \"ASC\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/rides/search",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "rides", "search"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Booking Management",
+      "item": [
+        {
+          "name": "Book a Ride",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.environment.set(\"bookingId\", responseJson.data.id);",
+                  "    pm.test(\"Booking ID saved\", function () {",
+                  "        pm.expect(responseJson.data.id).to.not.be.undefined;",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{passengerToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rideId\": {{rideId}},\n  \"seatsBooked\": 2,\n  \"passengerName\": \"Jane Passenger\",\n  \"passengerPhone\": \"+1987654321\",\n  \"pickupPoint\": \"Bandra Station, Platform 1\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/bookings",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "bookings"]
+            }
+          }
+        },
+        {
+          "name": "Get My Bookings",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{passengerToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/bookings/my-bookings",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "bookings", "my-bookings"]
+            }
+          }
+        },
+        {
+          "name": "Cancel Booking",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{passengerToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/bookings/{{bookingId}}/cancel",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "bookings", "{{bookingId}}", "cancel"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Error Scenarios",
+      "item": [
+        {
+          "name": "Book Own Ride (Should Fail)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{driverToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rideId\": {{rideId}},\n  \"seatsBooked\": 1,\n  \"passengerName\": \"John Driver\",\n  \"passengerPhone\": \"+1234567890\",\n  \"pickupPoint\": \"Anywhere\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/bookings",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "bookings"]
+            }
+          }
+        },
+        {
+          "name": "Book More Seats Than Available",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{passengerToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rideId\": {{rideId}},\n  \"seatsBooked\": 10,\n  \"passengerName\": \"Jane Passenger\",\n  \"passengerPhone\": \"+1987654321\",\n  \"pickupPoint\": \"Station\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/bookings",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "bookings"]
+            }
+          }
+        },
+        {
+          "name": "Post Ride Without Verification (Should Fail)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Unverified driver cannot post ride\", function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([400, 403]);",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.expect(responseJson.message).to.include('profile');",
+                  "    console.log(\"❌ Correctly blocked: \" + responseJson.message);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{driverToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"source\": \"Test City\",\n  \"destination\": \"Test Destination\",\n  \"departureDate\": \"2025-09-26T10:00:00\",\n  \"availableSeats\": 2,\n  \"pricePerSeat\": 100.00,\n  \"notes\": \"Test ride by unverified driver\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/rides",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "rides"]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          ""
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "pm.test(\"Status code validation\", function () {",
+          "    pm.expect(pm.response.code).to.be.oneOf([200, 201, 400, 401, 403, 404, 409]);",
+          "});",
+          "",
+          "if (pm.response.code >= 400) {",
+          "    pm.test(\"Error response has message\", function () {",
+          "        const responseJson = pm.response.json();",
+          "        pm.expect(responseJson).to.have.property('message');",
+          "    });",
+          "}"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080",
+      "type": "string"
+    }
+  ]
+}
