@@ -12,11 +12,19 @@ node_modules/
 /dist/
 /build/
 /out/
+**/node_modules/
+client/node_modules/
 
 # Environment files
 .env
 .env.local
 .env.*.local
+
+# Configuration files with sensitive data
+**/application.properties
+Ride-Sharing/src/main/resources/application.properties
+application.properties
+**/application-*.properties
 
 # Log files
 npm-debug.log*
@@ -33,6 +41,8 @@ Thumbs.db
 *.class
 *.jar
 /target/
+**/target/
+Ride-Sharing/target/
 /bin/
 
 # Package files
