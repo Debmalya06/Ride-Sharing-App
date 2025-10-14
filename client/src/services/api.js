@@ -31,12 +31,18 @@ class ApiService {
   // Generic API call method
   async apiCall(endpoint, options = {}) {
     const url = `${API_BASE_URL}${endpoint}`
+    
+    // Update token from localStorage before each call
+    this.token = localStorage.getItem('token')
+    
     const config = {
       headers: this.getAuthHeaders(),
       ...options,
     }
 
     console.log('Making API call to:', url, 'with config:', config)
+    console.log('Current token from localStorage:', this.token)
+    console.log('Authorization header:', config.headers['Authorization'])
 
     try {
       const response = await fetch(url, config)
@@ -230,8 +236,8 @@ class ApiService {
   // Update the searchRides method
   async searchRides(searchParams) {
     const payload = {
-      source: searchParams.source || '',
-      destination: searchParams.destination || '',
+      source: searchParams.from || searchParams.source || '',
+      destination: searchParams.to || searchParams.destination || '',
       departureDate: searchParams.date ? `${searchParams.date}T00:00:00` : '',
       maxPrice: searchParams.maxPrice ? parseFloat(searchParams.maxPrice) : null
     }
@@ -273,7 +279,30 @@ class ApiService {
     })
   }
 
+  // Calculate fare based on distance
+  async calculateFare(source, destination) {
+    const payload = {
+      source: source,
+      destination: destination
+    }
+    
+    console.log('Calculating fare for route:', payload)
+    
+    return this.apiCall('/rides/calculate-fare', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    })
+  }
+
   // Booking endpoints
+  async createBooking(rideId, seatsToBook) {
+    console.log('Creating booking for ride:', rideId, 'seats:', seatsToBook)
+    
+    return this.apiCall(`/rides/${rideId}/booking?seatsToBook=${seatsToBook}`, {
+      method: 'POST'
+    })
+  }
+
   async bookRide(rideId, seatsBooked, passengerName, passengerPhone, pickupPoint) {
     const payload = {
       rideId: rideId,
@@ -365,6 +394,108 @@ class ApiService {
     return this.apiCall(`/driver/verify/${driverDetailId}?verified=${verified}`, {
       method: 'PUT'
     })
+  }
+
+  // Admin: Get all users
+  async getAllUsers() {
+    return this.apiCall('/admin/users')
+  }
+
+  // Admin: Get user by ID
+  async getUserById(userId) {
+    return this.apiCall(`/admin/users/${userId}`)
+  }
+
+  // Admin: Delete user
+  async deleteUser(userId) {
+    return this.apiCall(`/admin/users/${userId}`, {
+      method: 'DELETE'
+    })
+  }
+
+  // Admin: Verify driver (alternative endpoint from Postman)
+  async adminVerifyDriver(driverDetailId) {
+    return this.apiCall(`/admin/drivers/${driverDetailId}/verify`, {
+      method: 'PUT'
+    })
+  }
+
+  // Admin: Reject driver verification
+  async adminRejectDriver(driverDetailId) {
+    return this.apiCall(`/admin/drivers/${driverDetailId}/reject`, {
+      method: 'PUT'
+    })
+  }
+
+  // ===================
+  // PAYMENT ENDPOINTS
+  // ===================
+
+  // Create payment order for booking
+  async createPaymentOrder(paymentRequest) {
+    return this.apiCall('/payments/create-order', {
+      method: 'POST',
+      body: JSON.stringify(paymentRequest)
+    })
+  }
+
+  // Verify payment signature
+  async verifyPayment(paymentData) {
+    return this.apiCall('/payments/verify', {
+      method: 'POST',
+      body: JSON.stringify({
+        razorpayOrderId: paymentData.razorpay_order_id,
+        razorpayPaymentId: paymentData.razorpay_payment_id,
+        razorpaySignature: paymentData.razorpay_signature,
+        paymentMethod: paymentData.paymentMethod,
+        gatewayResponse: JSON.stringify(paymentData)
+      })
+    })
+  }
+
+  // Handle payment failure
+  async handlePaymentFailure(failureData) {
+    return this.apiCall('/payments/failure', {
+      method: 'POST',
+      body: JSON.stringify(failureData)
+    })
+  }
+
+  // Get passenger payment history
+  async getPassengerPaymentHistory(passengerId) {
+    return this.apiCall(`/payments/history/passenger/${passengerId}`)
+  }
+
+  // Get driver payment history (earnings)
+  async getDriverPaymentHistory(driverId) {
+    return this.apiCall(`/payments/history/driver/${driverId}`)
+  }
+
+  // Get payment history by date range
+  async getPaymentHistoryByDateRange(userId, isDriver, startDate, endDate) {
+    const params = new URLSearchParams({
+      isDriver: isDriver.toString(),
+      startDate: startDate.toISOString(),
+      endDate: endDate.toISOString()
+    })
+    return this.apiCall(`/payments/history/${userId}?${params.toString()}`)
+  }
+
+  // Release payment to driver
+  async releasePaymentToDriver(bookingId) {
+    return this.apiCall(`/payments/release/${bookingId}`, {
+      method: 'POST'
+    })
+  }
+
+  // Get driver total earnings
+  async getDriverTotalEarnings(driverId) {
+    return this.apiCall(`/payments/earnings/${driverId}`)
+  }
+
+  // Get passenger total spending
+  async getPassengerTotalSpending(passengerId) {
+    return this.apiCall(`/payments/spending/${passengerId}`)
   }
 }
 

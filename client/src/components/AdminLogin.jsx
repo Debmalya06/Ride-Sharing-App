@@ -28,10 +28,13 @@ const AdminLogin = ({ onLogin }) => {
 
     try {
       const response = await apiService.adminLogin(formData.email, formData.password)
+      console.log('Admin login response:', response)
 
       if (response.status === 'SUCCESS') {
-        // Store the token
-        apiService.setToken(response.data.token)
+        // Store the token (it's returned as accessToken, not token)
+        const token = response.data.accessToken
+        console.log('Setting admin token:', token)
+        apiService.setToken(token)
         
         onLogin(response.data.admin, 'admin')
         navigate('/admin-dashboard')

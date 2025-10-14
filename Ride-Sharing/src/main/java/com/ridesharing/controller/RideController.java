@@ -7,12 +7,15 @@ import org.springframework.web.bind.annotation.*;
 
 import com.ridesharing.dto.ApiResponse;
 import com.ridesharing.dto.BookingResponseDto;
+import com.ridesharing.dto.DistanceResponseDto;
+import com.ridesharing.dto.FareCalculationRequest;
 import com.ridesharing.dto.RidePostDto;
 import com.ridesharing.dto.RideResponseDto;
 import com.ridesharing.dto.RideSearchDto;
 import com.ridesharing.entity.RideStatus;
 import com.ridesharing.security.JwtTokenProvider;
 import com.ridesharing.service.BookingService;
+import com.ridesharing.service.FreeDistanceCalculatorService;
 import com.ridesharing.service.RideService;
 
 import jakarta.validation.Valid;
@@ -25,6 +28,7 @@ public class RideController {
 
     private final RideService rideService;
     private final BookingService bookingService;
+    private final FreeDistanceCalculatorService freeDistanceCalculatorService;
     private final JwtTokenProvider jwtTokenProvider;
 
     // Driver endpoints for posting and managing rides
@@ -190,17 +194,102 @@ public class RideController {
         }
     }
 
+    // Passenger booking endpoint
+    @PostMapping("/{rideId}/booking")
+    public ResponseEntity<ApiResponse> createBooking(
+            @RequestHeader("Authorization") String token,
+            @PathVariable Long rideId,
+            @RequestParam Integer seatsToBook) {
+        try {
+            String phoneNumber = jwtTokenProvider.getUsernameFromToken(token.substring(7));
+            BookingResponseDto booking = bookingService.createBooking(phoneNumber, rideId, seatsToBook);
+            
+            return ResponseEntity.ok(new ApiResponse(
+                "SUCCESS",
+                "Booking created successfully",
+                booking
+            ));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(new ApiResponse(
+                "ERROR",
+                e.getMessage(),
+                null
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(new ApiResponse(
+                "ERROR",
+                "An error occurred while creating the booking",
+                null
+            ));
+        }
+    }
+
+    // Public endpoint for calculating fare based on distance using FREE mapping services
+    @PostMapping("/calculate-fare")
+    public ResponseEntity<ApiResponse> calculateFare(@RequestBody FareCalculationRequest request) {
+        try {
+            // Use FREE distance calculator service (OpenStreetMap + Nominatim - no API key needed!)
+            DistanceResponseDto fareCalculation = freeDistanceCalculatorService.calculateDistanceAndFare(
+                request.getSource(), 
+                request.getDestination()
+            );
+            
+            if ("SUCCESS".equals(fareCalculation.getStatus())) {
+                return ResponseEntity.ok(new ApiResponse(
+                    "SUCCESS",
+                    "Fare calculated using FREE OpenStreetMap services",
+                    fareCalculation
+                ));
+            } else {
+                return ResponseEntity.badRequest().body(new ApiResponse(
+                    "ERROR",
+                    fareCalculation.getErrorMessage(),
+                    null
+                ));
+            }
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(new ApiResponse(
+                "ERROR",
+                "Failed to calculate fare: " + e.getMessage(),
+                null
+            ));
+        }
+    }
+
+    // Additional endpoint for testing with query parameters
+    @GetMapping("/calculate-fare-simple")
+    public ResponseEntity<ApiResponse> calculateFareSimple(
+            @RequestParam String from,
+            @RequestParam String to) {
+        try {
+            DistanceResponseDto result = freeDistanceCalculatorService.calculateDistanceAndFare(from, to);
+            
+            return ResponseEntity.ok(new ApiResponse(
+                "SUCCESS",
+                "Distance calculated using FREE OpenStreetMap services",
+                result
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(new ApiResponse(
+                "ERROR",
+                "Failed to calculate distance: " + e.getMessage(),
+                null
+            ));
+        }
+    }
+
     // Public endpoints for searching rides
 
     @PostMapping("/search")
     public ResponseEntity<ApiResponse> searchRides(@Valid @RequestBody RideSearchDto searchDto) {
         try {
-            Page<RideResponseDto> rides = rideService.searchRides(searchDto);
+            Page<RideResponseDto> ridesPage = rideService.searchRides(searchDto);
             
+            // Extract content from Page to avoid serialization issues
             return ResponseEntity.ok(new ApiResponse(
                 "SUCCESS",
                 "Rides found successfully",
-                rides
+                ridesPage.getContent()
             ));
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(new ApiResponse(

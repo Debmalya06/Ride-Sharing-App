@@ -313,4 +313,43 @@ public class BookingService {
         
         return dto;
     }
+
+    public BookingResponseDto createBooking(String phoneNumber, Long rideId, Integer seatsToBook) {
+        User passenger = userService.getUserByPhoneNumber(phoneNumber);
+        
+        // Get the ride
+        Ride ride = rideRepository.findById(rideId)
+                .orElseThrow(() -> new RuntimeException("Ride not found"));
+
+        // Validate booking
+        validateBooking(passenger, ride, seatsToBook);
+
+        // Calculate total amount
+        BigDecimal totalAmount = ride.getPricePerSeat()
+                .multiply(BigDecimal.valueOf(seatsToBook));
+
+        // Create booking
+        Booking booking = new Booking();
+        booking.setRide(ride);
+        booking.setPassenger(passenger);
+        booking.setSeatsBooked(seatsToBook);
+        booking.setTotalAmount(totalAmount);
+        booking.setPassengerName(passenger.getFirstName() + " " + passenger.getLastName());
+        booking.setPassengerPhone(passenger.getPhoneNumber());
+        booking.setPickupPoint(ride.getSource()); // Default pickup point
+        booking.setStatus(BookingStatus.PENDING); // Default status is PENDING
+
+        // Update ride availability
+        ride.setAvailableSeats(ride.getAvailableSeats() - seatsToBook);
+        
+        // Update ride status if fully booked
+        if (ride.getAvailableSeats() == 0) {
+            ride.setStatus(RideStatus.FULL);
+        }
+
+        rideRepository.save(ride);
+        Booking savedBooking = bookingRepository.save(booking);
+        
+        return convertToResponseDto(savedBooking);
+    }
 }

@@ -1,6 +1,7 @@
 package com.ridesharing.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -8,9 +9,12 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.ridesharing.dto.DistanceResponseDto;
 import com.ridesharing.dto.RidePostDto;
 import com.ridesharing.dto.RideResponseDto;
 import com.ridesharing.dto.RideSearchDto;
+import com.ridesharing.entity.Booking;
+import com.ridesharing.entity.BookingStatus;
 import com.ridesharing.entity.DriverDetail;
 import com.ridesharing.entity.Ride;
 import com.ridesharing.entity.RideStatus;
@@ -20,6 +24,7 @@ import com.ridesharing.repository.BookingRepository;
 import com.ridesharing.repository.DriverDetailRepository;
 import com.ridesharing.repository.RideRepository;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -27,12 +32,15 @@ import java.util.stream.Collectors;
 @Service
 @Transactional
 @RequiredArgsConstructor
+@Slf4j
 public class RideService {
 
     private final RideRepository rideRepository;
     private final BookingRepository bookingRepository;
     private final DriverDetailRepository driverDetailRepository;
     private final UserService userService;
+    private final FreeDistanceCalculatorService freeDistanceCalculatorService;
+    private final PaymentService paymentService;
 
     public RideResponseDto postRide(String phoneNumber, RidePostDto ridePostDto) {
         User driver = userService.getUserByPhoneNumber(phoneNumber);
@@ -54,6 +62,29 @@ public class RideService {
             throw new RuntimeException("Your driver profile must be verified before posting rides");
         }
 
+        // Calculate dynamic fare based on distance using FREE service
+        BigDecimal calculatedFare = ridePostDto.getPricePerSeat();
+        try {
+            log.info("Calculating dynamic fare for route: {} to {} using FREE services", 
+                    ridePostDto.getSource(), ridePostDto.getDestination());
+            
+            DistanceResponseDto distanceResponse = freeDistanceCalculatorService.calculateDistanceAndFare(
+                ridePostDto.getSource(), 
+                ridePostDto.getDestination()
+            );
+            
+            if ("SUCCESS".equals(distanceResponse.getStatus())) {
+                calculatedFare = distanceResponse.getCalculatedFare();
+                log.info("Dynamic fare calculated: ₹{} for distance: {} km", 
+                        calculatedFare, distanceResponse.getDistanceKm());
+            } else {
+                log.warn("Failed to calculate dynamic fare: {}. Using provided fare: ₹{}", 
+                        distanceResponse.getErrorMessage(), calculatedFare);
+            }
+        } catch (Exception e) {
+            log.error("Error calculating dynamic fare, using provided fare", e);
+        }
+
         // Create ride with auto-filled vehicle details
         Ride ride = new Ride();
         ride.setDriver(driver);
@@ -62,7 +93,7 @@ public class RideService {
         ride.setDepartureDate(ridePostDto.getDepartureDate());
         ride.setAvailableSeats(ridePostDto.getAvailableSeats());
         ride.setTotalSeats(ridePostDto.getAvailableSeats());
-        ride.setPricePerSeat(ridePostDto.getPricePerSeat());
+        ride.setPricePerSeat(calculatedFare); // Use calculated fare
         ride.setNotes(ridePostDto.getNotes());
         
         // Auto-fill vehicle details from driver profile
@@ -134,6 +165,38 @@ public class RideService {
 
         ride.setStatus(status);
         Ride updatedRide = rideRepository.save(ride);
+        
+        // 🚗💰 AUTO-SETTLEMENT: When driver marks ride as COMPLETED
+        if (status == RideStatus.COMPLETED) {
+            log.info("🚗✅ Ride {} marked as COMPLETED by driver {}. Triggering auto-payment settlement...", 
+                    rideId, driver.getId());
+            
+            // Get all PAID bookings for this ride and settle payments
+            List<Booking> paidBookings = bookingRepository.findByRideAndStatusOrderByBookingDateAsc(
+                    ride, BookingStatus.PAID);
+            
+            for (Booking booking : paidBookings) {
+                try {
+                    // Auto-settle payment for each booking
+                    paymentService.autoSettlePaymentOnRideComplete(booking.getId());
+                    
+                    // Update booking status to COMPLETED
+                    booking.setStatus(BookingStatus.COMPLETED);
+                    bookingRepository.save(booking);
+                    
+                    log.info("💰✅ Payment auto-settled for booking {} - Driver gets paid instantly!", 
+                            booking.getId());
+                            
+                } catch (Exception e) {
+                    log.error("❌ Failed to auto-settle payment for booking {}: {}", 
+                            booking.getId(), e.getMessage());
+                    // Continue with other bookings even if one fails
+                }
+            }
+            
+            log.info("🎉 Auto-settlement completed for ride {}. Driver earnings processed!", rideId);
+        }
+        
         return convertToResponseDto(updatedRide);
     }
 

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom"
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from "react-router-dom"
 import LandingPage from "./components/LandingPage"
 import LoginPage from "./components/LoginPage"
 import RegisterPage from "./components/RegisterPage"
@@ -11,6 +11,24 @@ import OtpVerification from "./components/OtpVerification"
 import Header from "./components/Header"
 import Footer from "./components/Footer"
 import apiService from "./services/api"
+
+// Component to conditionally render Header and Footer
+const Layout = ({ children, user, userType, onLogout }) => {
+  const location = useLocation()
+  
+  // Show header on all pages, but footer only on non-dashboard pages
+  const isDashboardPage = ['/driver-dashboard', '/passenger-dashboard', '/admin-dashboard'].includes(location.pathname)
+  
+  return (
+    <>
+      <Header user={user} userType={userType} onLogout={onLogout} />
+      <main className={isDashboardPage ? "min-h-screen" : "min-h-screen"}>
+        {children}
+      </main>
+      {!isDashboardPage && <Footer />}
+    </>
+  )
+}
 
 function App() {
   const [user, setUser] = useState(null)
@@ -48,8 +66,7 @@ function App() {
   return (
     <Router>
       <div className="min-h-screen bg-gradient-to-br from-yellow-50 to-orange-50">
-        <Header user={user} userType={userType} onLogout={handleLogout} />
-        <main className="min-h-screen">
+        <Layout user={user} userType={userType} onLogout={handleLogout}>
           <Routes>
             <Route path="/" element={<LandingPage />} />
             <Route
@@ -81,8 +98,7 @@ function App() {
               element={user && userType === "admin" ? <AdminDashboard user={user} /> : <Navigate to="/admin-login" />}
             />
           </Routes>
-        </main>
-        <Footer />
+        </Layout>
       </div>
     </Router>
   )

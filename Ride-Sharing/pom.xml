@@ -114,6 +114,13 @@
 			<version>10.1.5</version>
 		</dependency>
 		
+		<!-- Razorpay Java SDK for Payment Integration -->
+		<dependency>
+			<groupId>com.razorpay</groupId>
+			<artifactId>razorpay-java</artifactId>
+			<version>1.4.6</version>
+		</dependency>
+		
 		<!-- Configuration Properties -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>

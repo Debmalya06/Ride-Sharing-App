@@ -1,82 +1,285 @@
 import { useState, useEffect } from 'react'
-import { Users, Car, IndianRupee, TrendingUp, UserCheck, UserX, AlertTriangle, Eye, CheckCircle, XCircle } from 'lucide-react'
-import ApiService from '../services/api'
+import { Users, Car, IndianRupee, TrendingUp, UserCheck, UserX, AlertTriangle, Eye, CheckCircle, XCircle, Trash2, RefreshCw, Shield, UserPlus } from 'lucide-react'
+import apiService from '../services/api'
 
 const AdminDashboard = ({ user }) => {
   const [activeTab, setActiveTab] = useState('overview')
-  const [users] = useState([
-    { id: 1, name: 'John Doe', email: 'john@example.com', type: 'passenger', status: 'active', joinDate: '2024-01-01' },
-    { id: 2, name: 'Jane Smith', email: 'jane@example.com', type: 'driver', status: 'active', joinDate: '2024-01-02' },
-    { id: 3, name: 'Bob Johnson', email: 'bob@example.com', type: 'passenger', status: 'suspended', joinDate: '2024-01-03' }
-  ])
-  const [rides] = useState([
-    { id: 1, driver: 'Jane Smith', from: 'Mumbai', to: 'Pune', date: '2024-01-15', passengers: 3, status: 'active', revenue: 1350 },
-    { id: 2, driver: 'Mike Wilson', from: 'Delhi', to: 'Jaipur', date: '2024-01-16', passengers: 2, status: 'completed', revenue: 1200 }
-  ])
   
+  // Real data from APIs
+  const [allUsers, setAllUsers] = useState([])
   const [allDrivers, setAllDrivers] = useState([])
   const [pendingDrivers, setPendingDrivers] = useState([])
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  
+  // UI states
   const [showPendingOnly, setShowPendingOnly] = useState(false)
+  const [selectedUser, setSelectedUser] = useState(null)
+  const [showUserModal, setShowUserModal] = useState(false)
+
+  // Stats data
+  const [stats, setStats] = useState({
+    totalUsers: 0,
+    totalDrivers: 0,
+    pendingVerifications: 0,
+    totalRevenue: 0
+  })
 
   useEffect(() => {
-    if (activeTab === 'drivers') {
-      fetchAllDrivers()
+    // Ensure the API service has the latest token from localStorage
+    const token = localStorage.getItem('token')
+    console.log('AdminDashboard loaded with token:', token)
+    if (token) {
+      apiService.setToken(token)
+    }
+    
+    // Fetch initial data on component mount
+    fetchAllData()
+  }, [])
+
+  useEffect(() => {
+    // Fetch specific data based on active tab
+    switch (activeTab) {
+      case 'users':
+        fetchAllUsers()
+        break
+      case 'drivers':
+        fetchAllDrivers()
+        break
+      case 'pending':
+        fetchPendingDrivers()
+        break
+      default:
+        break
     }
   }, [activeTab])
 
-  const fetchAllDrivers = async () => {
+  // Fetch all data for overview
+  const fetchAllData = async () => {
     try {
       setLoading(true)
-      const response = await ApiService.getAllDriverDetails()
-      if (response && response.data) {
-        setAllDrivers(response.data)
+      setError('')
+      
+      // Ensure API service has latest token before making admin calls
+      const token = localStorage.getItem('token')
+      console.log('fetchAllData - ensuring token is set:', token)
+      if (token) {
+        apiService.setToken(token)
+      } else {
+        setError('No authentication token found. Please login again.')
+        return
+      }
+      
+      await Promise.all([
+        fetchAllUsers(),
+        fetchAllDrivers(),
+        fetchPendingDrivers()
+      ])
+      
+      updateStats()
+    } catch (error) {
+      console.error('Error fetching admin data:', error)
+      setError('Failed to load admin data: ' + error.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Fetch all users
+  const fetchAllUsers = async () => {
+    try {
+      console.log('Fetching all users...')
+      console.log('Current token:', localStorage.getItem('token'))
+      
+      const response = await apiService.getAllUsers()
+      console.log('Users response:', response)
+      console.log('Response type:', typeof response)
+      console.log('Response status:', response?.status)
+      console.log('Response data:', response?.data)
+      
+      if (response && response.status === 'SUCCESS' && response.data) {
+        setAllUsers(Array.isArray(response.data) ? response.data : [])
+        console.log('Set users from response.data:', response.data)
+      } else if (response && Array.isArray(response)) {
+        setAllUsers(response)
+        console.log('Set users from direct array:', response)
+      } else {
+        setAllUsers([])
+        console.log('No users found or invalid response format:', response)
+      }
+    } catch (error) {
+      console.error('Error fetching users:', error)
+      console.error('Error stack:', error.stack)
+      setError('Failed to fetch users: ' + error.message)
+      setAllUsers([])
+    }
+  }
+
+  // Fetch all drivers
+  const fetchAllDrivers = async () => {
+    try {
+      console.log('Fetching all drivers...')
+      console.log('Current token:', localStorage.getItem('token'))
+      setLoading(true)
+      
+      const response = await apiService.getAllDriverDetails()
+      console.log('Drivers response:', response)
+      console.log('Response type:', typeof response)
+      console.log('Response status:', response?.status)
+      console.log('Response data:', response?.data)
+      
+      if (response && response.status === 'SUCCESS' && response.data) {
+        setAllDrivers(Array.isArray(response.data) ? response.data : [])
+        console.log('Set drivers from response.data:', response.data)
       } else if (response && Array.isArray(response)) {
         setAllDrivers(response)
+        console.log('Set drivers from direct array:', response)
       } else {
         setAllDrivers([])
+        console.log('No drivers found or invalid response format:', response)
       }
     } catch (error) {
       console.error('Error fetching drivers:', error)
-      alert(`Error fetching drivers: ${error.response?.data?.message || error.message}`)
+      console.error('Error stack:', error.stack)
+      setError('Failed to fetch drivers: ' + error.message)
       setAllDrivers([])
     } finally {
       setLoading(false)
     }
   }
 
+  // Fetch pending drivers
   const fetchPendingDrivers = async () => {
     try {
+      console.log('Fetching pending drivers...')
+      console.log('Current token:', localStorage.getItem('token'))
       setLoading(true)
-      const response = await ApiService.getPendingDrivers()
-      if (response && response.data) {
-        setPendingDrivers(response.data)
+      
+      const response = await apiService.getPendingDrivers()
+      console.log('Pending drivers response:', response)
+      console.log('Response type:', typeof response)
+      console.log('Response status:', response?.status)
+      console.log('Response data:', response?.data)
+      
+      if (response && response.status === 'SUCCESS' && response.data) {
+        setPendingDrivers(Array.isArray(response.data) ? response.data : [])
+        console.log('Set pending drivers from response.data:', response.data)
       } else if (response && Array.isArray(response)) {
         setPendingDrivers(response)
+        console.log('Set pending drivers from direct array:', response)
       } else {
         setPendingDrivers([])
+        console.log('No pending drivers found or invalid response format:', response)
       }
     } catch (error) {
       console.error('Error fetching pending drivers:', error)
-      alert(`Error fetching pending drivers: ${error.response?.data?.message || error.message}`)
+      console.error('Error stack:', error.stack)
+      setError('Failed to fetch pending drivers: ' + error.message)
       setPendingDrivers([])
     } finally {
       setLoading(false)
     }
   }
 
-  const verifyDriver = async (driverDetailId, verified) => {
+  // Update stats based on fetched data
+  const updateStats = () => {
+    setStats({
+      totalUsers: allUsers.length,
+      totalDrivers: allDrivers.length,
+      pendingVerifications: pendingDrivers.length,
+      totalRevenue: 50000 // This would come from a real API
+    })
+  }
+
+  // Verify driver
+  const handleVerifyDriver = async (driverDetailId) => {
     try {
-      setLoading(true)
-      await ApiService.verifyDriver(driverDetailId, verified)
-      // Refresh the driver list
-      fetchAllDrivers()
-      alert(`Driver ${verified ? 'approved' : 'rejected'} successfully!`)
+      console.log('Verifying driver:', driverDetailId)
+      const response = await apiService.adminVerifyDriver(driverDetailId)
+      console.log('Verify driver response:', response)
+      
+      if (response && (response.status === 'SUCCESS' || response.success)) {
+        alert('Driver verified successfully!')
+        // Refresh data
+        await fetchPendingDrivers()
+        await fetchAllDrivers()
+        updateStats()
+      } else {
+        alert('Failed to verify driver: ' + (response?.message || 'Unknown error'))
+      }
     } catch (error) {
       console.error('Error verifying driver:', error)
-      alert(`Error ${verified ? 'approving' : 'rejecting'} driver: ${error.response?.data?.message || error.message}`)
-    } finally {
-      setLoading(false)
+      alert('Error verifying driver: ' + (error.message || 'Unknown error'))
+    }
+  }
+
+  // Reject driver
+  const handleRejectDriver = async (driverDetailId) => {
+    if (!window.confirm('Are you sure you want to reject this driver?')) {
+      return
+    }
+    
+    try {
+      console.log('Rejecting driver:', driverDetailId)
+      const response = await apiService.adminRejectDriver(driverDetailId)
+      console.log('Reject driver response:', response)
+      
+      if (response && (response.status === 'SUCCESS' || response.success)) {
+        alert('Driver rejected successfully!')
+        // Refresh data
+        await fetchPendingDrivers()
+        await fetchAllDrivers()
+        updateStats()
+      } else {
+        alert('Failed to reject driver: ' + (response?.message || 'Unknown error'))
+      }
+    } catch (error) {
+      console.error('Error rejecting driver:', error)
+      alert('Error rejecting driver: ' + (error.message || 'Unknown error'))
+    }
+  }
+
+  // Delete user
+  const handleDeleteUser = async (userId) => {
+    if (!window.confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
+      return
+    }
+    
+    try {
+      console.log('Deleting user:', userId)
+      const response = await apiService.deleteUser(userId)
+      console.log('Delete user response:', response)
+      
+      if (response && (response.status === 'SUCCESS' || response.success)) {
+        alert('User deleted successfully!')
+        // Refresh users data
+        await fetchAllUsers()
+        updateStats()
+      } else {
+        alert('Failed to delete user: ' + (response?.message || 'Unknown error'))
+      }
+    } catch (error) {
+      console.error('Error deleting user:', error)
+      alert('Error deleting user: ' + (error.message || 'Unknown error'))
+    }
+  }
+
+  // View user details
+  const handleViewUser = async (userId) => {
+    try {
+      console.log('Fetching user details:', userId)
+      const response = await apiService.getUserById(userId)
+      console.log('User details response:', response)
+      
+      if (response && response.status === 'SUCCESS' && response.data) {
+        setSelectedUser(response.data)
+        setShowUserModal(true)
+      } else {
+        alert('Failed to fetch user details')
+      }
+    } catch (error) {
+      console.error('Error fetching user details:', error)
+      alert('Error fetching user details: ' + (error.message || 'Unknown error'))
     }
   }
 
@@ -86,8 +289,24 @@ const AdminDashboard = ({ user }) => {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
-          <p className="text-gray-600 mt-2">Welcome back, {user.name}!</p>
+          <p className="text-gray-600 mt-2">Welcome back, {user?.name || user?.firstName || 'Admin'}!</p>
         </div>
+
+        {/* Error Message */}
+        {error && (
+          <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
+            <div className="flex items-center">
+              <AlertTriangle className="h-5 w-5 text-red-500 mr-2" />
+              <span className="text-red-700">{error}</span>
+              <button 
+                onClick={() => setError('')}
+                className="ml-auto text-red-500 hover:text-red-700"
+              >
+                ×
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
@@ -96,7 +315,7 @@ const AdminDashboard = ({ user }) => {
               <Users className="h-8 w-8 text-blue-500" />
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-500">Total Users</p>
-                <p className="text-2xl font-bold text-gray-900">1,234</p>
+                <p className="text-2xl font-bold text-gray-900">{stats.totalUsers}</p>
               </div>
             </div>
           </div>
@@ -104,26 +323,26 @@ const AdminDashboard = ({ user }) => {
             <div className="flex items-center">
               <Car className="h-8 w-8 text-green-500" />
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-500">Active Rides</p>
-                <p className="text-2xl font-bold text-gray-900">89</p>
+                <p className="text-sm font-medium text-gray-500">Total Drivers</p>
+                <p className="text-2xl font-bold text-gray-900">{stats.totalDrivers}</p>
               </div>
             </div>
           </div>
           <div className="bg-white rounded-lg shadow-sm p-6">
             <div className="flex items-center">
-              <IndianRupee className="h-8 w-8 text-yellow-500" />
+              <AlertTriangle className="h-8 w-8 text-yellow-500" />
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-500">Revenue</p>
-                <p className="text-2xl font-bold text-gray-900">₹2,45,600</p>
+                <p className="text-sm font-medium text-gray-500">Pending Verifications</p>
+                <p className="text-2xl font-bold text-gray-900">{stats.pendingVerifications}</p>
               </div>
             </div>
           </div>
           <div className="bg-white rounded-lg shadow-sm p-6">
             <div className="flex items-center">
-              <TrendingUp className="h-8 w-8 text-purple-500" />
+              <IndianRupee className="h-8 w-8 text-purple-500" />
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-500">Growth</p>
-                <p className="text-2xl font-bold text-gray-900">+23%</p>
+                <p className="text-sm font-medium text-gray-500">Platform Revenue</p>
+                <p className="text-2xl font-bold text-gray-900">₹{stats.totalRevenue.toLocaleString()}</p>
               </div>
             </div>
           </div>
@@ -137,53 +356,64 @@ const AdminDashboard = ({ user }) => {
                 onClick={() => setActiveTab('overview')}
                 className={`py-4 px-1 border-b-2 font-medium text-sm ${
                   activeTab === 'overview'
-                    ? 'border-red-500 text-red-600'
+                    ? 'border-blue-500 text-blue-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >
+                <TrendingUp className="h-4 w-4 inline mr-2" />
                 Overview
               </button>
               <button
                 onClick={() => setActiveTab('users')}
                 className={`py-4 px-1 border-b-2 font-medium text-sm ${
                   activeTab === 'users'
-                    ? 'border-red-500 text-red-600'
+                    ? 'border-blue-500 text-blue-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >
-                User Management
+                <Users className="h-4 w-4 inline mr-2" />
+                All Users ({allUsers.length})
               </button>
               <button
                 onClick={() => setActiveTab('drivers')}
                 className={`py-4 px-1 border-b-2 font-medium text-sm ${
                   activeTab === 'drivers'
-                    ? 'border-red-500 text-red-600'
+                    ? 'border-blue-500 text-blue-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >
-                Driver Verification
+                <Car className="h-4 w-4 inline mr-2" />
+                All Drivers ({allDrivers.length})
               </button>
               <button
-                onClick={() => setActiveTab('rides')}
-                className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === 'rides'
-                    ? 'border-red-500 text-red-600'
+                onClick={() => setActiveTab('pending')}
+                className={`py-4 px-1 border-b-2 font-medium text-sm relative ${
+                  activeTab === 'pending'
+                    ? 'border-yellow-500 text-yellow-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >
-                Ride Management
-              </button>
-              <button
-                onClick={() => setActiveTab('reports')}
-                className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === 'reports'
-                    ? 'border-red-500 text-red-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                Reports
+                <Shield className="h-4 w-4 inline mr-2" />
+                Pending Verifications ({pendingDrivers.length})
+                {pendingDrivers.length > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full text-xs px-1.5 py-0.5">
+                    {pendingDrivers.length}
+                  </span>
+                )}
               </button>
             </nav>
+            
+            {/* Refresh Button */}
+            <div className="absolute top-4 right-6">
+              <button
+                onClick={fetchAllData}
+                disabled={loading}
+                className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+                <span>{loading ? 'Loading...' : 'Refresh Data'}</span>
+              </button>
+            </div>
           </div>
 
           <div className="p-6">
@@ -508,6 +738,70 @@ const AdminDashboard = ({ user }) => {
             )}
           </div>
         </div>
+
+        {/* User Details Modal */}
+        {showUserModal && selectedUser && (
+          <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+            <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+              <div className="mt-3">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-medium text-gray-900">User Details</h3>
+                  <button
+                    onClick={() => setShowUserModal(false)}
+                    className="text-gray-400 hover:text-gray-600"
+                  >
+                    <XCircle className="h-6 w-6" />
+                  </button>
+                </div>
+                
+                <div className="space-y-3">
+                  <div>
+                    <span className="text-sm font-medium text-gray-500">Name:</span>
+                    <p className="text-sm text-gray-900">{selectedUser.firstName} {selectedUser.lastName}</p>
+                  </div>
+                  <div>
+                    <span className="text-sm font-medium text-gray-500">Email:</span>
+                    <p className="text-sm text-gray-900">{selectedUser.email}</p>
+                  </div>
+                  <div>
+                    <span className="text-sm font-medium text-gray-500">Phone:</span>
+                    <p className="text-sm text-gray-900">{selectedUser.phoneNumber}</p>
+                  </div>
+                  <div>
+                    <span className="text-sm font-medium text-gray-500">Role:</span>
+                    <p className="text-sm text-gray-900">{selectedUser.role}</p>
+                  </div>
+                  <div>
+                    <span className="text-sm font-medium text-gray-500">Status:</span>
+                    <p className="text-sm text-gray-900">{selectedUser.isActive ? 'Active' : 'Inactive'}</p>
+                  </div>
+                  <div>
+                    <span className="text-sm font-medium text-gray-500">Joined:</span>
+                    <p className="text-sm text-gray-900">{new Date(selectedUser.createdAt).toLocaleDateString()}</p>
+                  </div>
+                </div>
+                
+                <div className="flex justify-end space-x-3 mt-6">
+                  <button
+                    onClick={() => setShowUserModal(false)}
+                    className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400"
+                  >
+                    Close
+                  </button>
+                  <button
+                    onClick={() => {
+                      handleDeleteUser(selectedUser.id)
+                      setShowUserModal(false)
+                    }}
+                    className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                  >
+                    Delete User
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )

@@ -1,6 +1,32 @@
 import { useState, useEffect } from 'react'
-import { Search, MapPin, Calendar, Clock, Users, IndianRupee, Star, Filter, X, RefreshCw } from 'lucide-react'
+import { Search, MapPin, Calendar, Clock, Users, Star, RefreshCw, Car } from 'lucide-react'
+import { MapContainer, TileLayer, Marker, Popup, useMapEvents, Polyline } from 'react-leaflet'
+import L from 'leaflet'
+import 'leaflet/dist/leaflet.css'
 import apiService from '../services/api'
+import PaymentModal from './PaymentModal'
+import PaymentHistory from './PaymentHistory'
+
+// Fix for default markers in react-leaflet
+delete L.Icon.Default.prototype._getIconUrl
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+})
+
+// Custom markers
+const createCustomIcon = (color) => {
+  return L.divIcon({
+    className: 'custom-div-icon',
+    html: `<div style="background-color:${color};width:20px;height:20px;border-radius:50%;border:3px solid white;box-shadow:0 2px 4px rgba(0,0,0,0.3);"></div>`,
+    iconSize: [20, 20],
+    iconAnchor: [10, 10]
+  })
+}
+
+const greenIcon = createCustomIcon('#22c55e')
+const redIcon = createCustomIcon('#ef4444')
 
 const PassengerDashboard = ({ user }) => {
   const [activeTab, setActiveTab] = useState('search')
@@ -10,17 +36,249 @@ const PassengerDashboard = ({ user }) => {
     date: '',
     maxPrice: ''
   })
-  const [availableRides, setAvailableRides] = useState([])
+  const [availableRides, setAvailableRides] = useState([]) // Always initialize as empty array
   const [bookings, setBookings] = useState([]) // Active bookings
   const [rideHistory, setRideHistory] = useState([]) // Ride history
   const [loading, setLoading] = useState(false)
   const [searchPerformed, setSearchPerformed] = useState(false)
   const [error, setError] = useState('')
   const [selectedSeats, setSelectedSeats] = useState({}) // Track selected seats for each ride
+  
+  // Map and Location state
+  const [showFromSuggestions, setShowFromSuggestions] = useState(false)
+  const [showToSuggestions, setShowToSuggestions] = useState(false)
+  const [showAllRides, setShowAllRides] = useState(false)
+  const [fromCoords, setFromCoords] = useState(null)
+  const [toCoords, setToCoords] = useState(null)
+  const [mapCenter, setMapCenter] = useState([22.5726, 88.3639]) // Kolkata coordinates
+  const [mapZoom, setMapZoom] = useState(12)
+  const [geocodingLoading, setGeocodingLoading] = useState({
+    from: false,
+    to: false
+  })
+  
+  const [locationSuggestions] = useState([
+    // Kolkata and West Bengal
+    'Kolkata Airport', 'Howrah Station', 'Sealdah Station', 'Salt Lake City Center',
+    'Park Street', 'New Market', 'Esplanade', 'Gariahat', 'Tollygunge',
+    'Behala', 'Jadavpur', 'Rajarhat', 'Garia', 'Barasat', 'Dum Dum',
+    'Ballygunge', 'Hazra', 'Rashbehari', 'Shyambazar', 'Ultadanga',
+    'Howrah', 'Durgapur', 'Asansol', 'Siliguri', 'Kharagpur',
+    
+    // Major Indian Cities
+    'Mumbai', 'Delhi', 'Bangalore', 'Chennai', 'Hyderabad', 'Pune',
+    'Ahmedabad', 'Surat', 'Jaipur', 'Lucknow', 'Kanpur', 'Nagpur',
+    'Indore', 'Thane', 'Bhopal', 'Visakhapatnam', 'Pimpri-Chinchwad',
+    'Patna', 'Vadodara', 'Ghaziabad', 'Ludhiana', 'Agra', 'Nashik',
+    'Faridabad', 'Meerut', 'Rajkot', 'Kalyan-Dombivali', 'Vasai-Virar',
+    'Varanasi', 'Srinagar', 'Aurangabad', 'Dhanbad', 'Amritsar',
+    'Navi Mumbai', 'Allahabad', 'Ranchi', 'Coimbatore', 'Jabalpur',
+    
+    // Popular landmarks and areas
+    'Connaught Place', 'India Gate', 'Red Fort', 'Gateway of India',
+    'Marine Drive', 'Juhu Beach', 'Bandra', 'Andheri', 'Powai',
+    'Electronic City', 'Whitefield', 'Koramangala', 'Indiranagar',
+    'MG Road', 'Brigade Road', 'Commercial Street', 'UB City Mall'
+  ])
+  
+  // Payment Modal State
+  const [paymentModal, setPaymentModal] = useState({
+    isOpen: false,
+    booking: null
+  })
+
+  // Enhanced geocoding function with multiple services and fallbacks
+  const geocodeLocation = async (locationName) => {
+    if (!locationName) return null
+    
+    try {
+      console.log('🔍 Geocoding location:', locationName)
+      
+      // First try: Nominatim with multiple search strategies
+      const searchQueries = [
+        `${locationName}, India`,
+        `${locationName}, West Bengal, India`,
+        `${locationName}`,
+        `${locationName}, Kolkata, West Bengal, India`
+      ]
+      
+      for (const query of searchQueries) {
+        try {
+          const response = await fetch(
+            `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=3&addressdetails=1`,
+            {
+              headers: {
+                'User-Agent': 'RideSharing-App/1.0'
+              }
+            }
+          )
+          
+          if (!response.ok) {
+            console.warn(`⚠️ Nominatim API error: ${response.status}`)
+            continue
+          }
+          
+          const data = await response.json()
+          console.log(`🌍 Nominatim result for "${query}":`, data)
+          
+          if (data && data.length > 0) {
+            // Prefer results in India or West Bengal
+            const preferredResult = data.find(result => 
+              result.display_name.toLowerCase().includes('india') ||
+              result.display_name.toLowerCase().includes('west bengal') ||
+              result.display_name.toLowerCase().includes('kolkata')
+            ) || data[0]
+            
+            const coords = {
+              lat: parseFloat(preferredResult.lat),
+              lng: parseFloat(preferredResult.lon)
+            }
+            console.log('✅ Nominatim coordinates found:', coords)
+            return coords
+          }
+        } catch (fetchError) {
+          console.warn(`⚠️ Nominatim fetch error for "${query}":`, fetchError)
+          continue
+        }
+      }
+      
+      // Fallback: Use predefined coordinates for known locations
+      const knownLocations = {
+        'howrah': { lat: 22.5958, lng: 88.2636 },
+        'bangalore': { lat: 12.9716, lng: 77.5946 },
+        'mumbai': { lat: 19.0760, lng: 72.8777 },
+        'delhi': { lat: 28.7041, lng: 77.1025 },
+        'kolkata': { lat: 22.5726, lng: 88.3639 },
+        'chennai': { lat: 13.0827, lng: 80.2707 },
+        'hyderabad': { lat: 17.3850, lng: 78.4867 },
+        'pune': { lat: 18.5204, lng: 73.8567 },
+        'salt lake': { lat: 22.5675, lng: 88.4044 },
+        'park street': { lat: 22.5448, lng: 88.3426 },
+        'sealdah': { lat: 22.5665, lng: 88.3712 },
+        'howrah station': { lat: 22.5851, lng: 88.2627 },
+        'jadavpur': { lat: 22.4989, lng: 88.3671 },
+        'esplanade': { lat: 22.5695, lng: 88.3499 }
+      }
+      
+      const normalizedLocation = locationName.toLowerCase().trim()
+      for (const [key, coords] of Object.entries(knownLocations)) {
+        if (normalizedLocation.includes(key) || key.includes(normalizedLocation)) {
+          console.log(`✅ Using fallback coordinates for "${locationName}":`, coords)
+          return coords
+        }
+      }
+      
+      console.log('❌ No coordinates found for:', locationName)
+      return null
+      
+    } catch (error) {
+      console.error('❌ Geocoding error:', error)
+      return null
+    }
+  }
+
+  // Reverse geocoding function
+  const reverseGeocode = async (lat, lng) => {
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`
+      )
+      const data = await response.json()
+      if (data && data.display_name) {
+        // Extract relevant part of the address
+        const address = data.display_name.split(',')
+        return address.length > 2 ? `${address[0]}, ${address[1]}` : address[0]
+      }
+      return `Location (${lat.toFixed(4)}, ${lng.toFixed(4)})`
+    } catch (error) {
+      console.error('Reverse geocoding error:', error)
+      return `Location (${lat.toFixed(4)}, ${lng.toFixed(4)})`
+    }
+  }
+
+  // Map click handler component
+  const MapClickHandler = () => {
+    useMapEvents({
+      click: async (e) => {
+        const { lat, lng } = e.latlng
+        const locationName = await reverseGeocode(lat, lng)
+        
+        // Set as pickup if empty, otherwise as dropoff
+        if (!searchFilters.from) {
+          setSearchFilters(prev => ({ ...prev, from: locationName }))
+          setFromCoords({ lat, lng })
+        } else if (!searchFilters.to) {
+          setSearchFilters(prev => ({ ...prev, to: locationName }))
+          setToCoords({ lat, lng })
+        } else {
+          // If both are filled, replace the pickup
+          setSearchFilters(prev => ({ ...prev, from: locationName }))
+          setFromCoords({ lat, lng })
+        }
+      }
+    })
+    return null
+  }
+
+  // Update coordinates when locations change
+  useEffect(() => {
+    if (searchFilters.from) {
+      console.log('🔍 Geocoding FROM location:', searchFilters.from)
+      setGeocodingLoading(prev => ({ ...prev, from: true }))
+      
+      geocodeLocation(searchFilters.from).then(coords => {
+        if (coords) {
+          console.log('✅ FROM coordinates set:', coords)
+          setFromCoords(coords)
+          setMapCenter([coords.lat, coords.lng])
+          setMapZoom(13)
+        } else {
+          console.log('❌ FROM coordinates not found')
+          setFromCoords(null)
+        }
+        setGeocodingLoading(prev => ({ ...prev, from: false }))
+      })
+    } else {
+      setFromCoords(null)
+      setGeocodingLoading(prev => ({ ...prev, from: false }))
+    }
+  }, [searchFilters.from])
+
+  useEffect(() => {
+    if (searchFilters.to) {
+      console.log('🔍 Geocoding TO location:', searchFilters.to)
+      setGeocodingLoading(prev => ({ ...prev, to: true }))
+      
+      geocodeLocation(searchFilters.to).then(coords => {
+        if (coords) {
+          console.log('✅ TO coordinates set:', coords)
+          setToCoords(coords)
+          // If we have both coordinates, center the map between them
+          if (fromCoords) {
+            const centerLat = (fromCoords.lat + coords.lat) / 2
+            const centerLng = (fromCoords.lng + coords.lng) / 2
+            setMapCenter([centerLat, centerLng])
+            setMapZoom(12)
+          }
+        } else {
+          console.log('❌ TO coordinates not found')
+          setToCoords(null)
+        }
+        setGeocodingLoading(prev => ({ ...prev, to: false }))
+      })
+    } else {
+      console.log('🔄 Clearing TO coordinates')
+      setToCoords(null)
+      setGeocodingLoading(prev => ({ ...prev, to: false }))
+    }
+  }, [searchFilters.to, fromCoords])
 
   useEffect(() => {
     fetchBookings()
     loadAllRides()
+    
+    // Add debugging to see what happens on load
+    console.log('PassengerDashboard mounted, availableRides:', availableRides)
   }, [])
 
   const fetchBookings = async () => {
@@ -32,857 +290,894 @@ const PassengerDashboard = ({ user }) => {
       console.log('Bookings response:', response)
       
       if (response && response.status === 'SUCCESS' && response.data) {
-        const allBookings = response.data
+        const allBookings = Array.isArray(response.data) ? response.data : []
         
         // Separate active bookings from ride history
         const activeBookings = allBookings.filter(booking => 
-          booking.status === 'PENDING' || booking.status === 'CONFIRMED'
+          booking.status === 'PENDING' || booking.status === 'CONFIRMED' || booking.status === 'PAID'
         )
         
         const completedBookings = allBookings.filter(booking => 
-          booking.status === 'CANCELLED' || booking.status === 'COMPLETED'
+          booking.status === 'COMPLETED' || booking.status === 'CANCELLED'
         )
         
         setBookings(activeBookings)
         setRideHistory(completedBookings)
-        
-        console.log('Active bookings:', activeBookings)
-        console.log('Ride history:', completedBookings)
+      } else {
+        console.log('No bookings found or invalid response format')
+        setBookings([])
+        setRideHistory([])
       }
     } catch (error) {
       console.error('Error fetching bookings:', error)
-      setError('Failed to load bookings')
+      setError('Failed to load bookings. Please try again.')
+      setBookings([])
+      setRideHistory([])
     } finally {
       setLoading(false)
     }
   }
 
-  // Update the loadAllRides function
   const loadAllRides = async () => {
     try {
+      console.log('🚀 Loading all rides...')
+      // Use search with empty filters to get all available rides
+      const response = await apiService.searchRides({})
+      console.log('🚀 Load all rides response:', response)
+      
+      if (response && response.status === 'SUCCESS' && response.data) {
+        // Handle Spring Boot Page response
+        let ridesData = []
+        if (response.data.content && Array.isArray(response.data.content)) {
+          ridesData = response.data.content
+          console.log('📄 Found rides in Page.content:', ridesData.length)
+        } else if (Array.isArray(response.data)) {
+          ridesData = response.data
+          console.log('📄 Found rides in direct array:', ridesData.length)
+        } else {
+          console.log('📄 No rides data or unexpected structure:', response.data)
+        }
+        setAvailableRides(showAllRides ? ridesData : ridesData.slice(0, 3)) // Show only 3 most recent rides by default, or all if requested
+        setSearchPerformed(true) // Set this to true so rides show on initial load
+        console.log('✅ Set availableRides to:', ridesData.slice(0, 5))
+      } else {
+        console.log('❌ Load rides failed or no data')
+        setAvailableRides([])
+      }
+    } catch (error) {
+      console.error('❌ Error loading rides:', error)
+      setAvailableRides([])
+    }
+  }
+
+  const fetchAvailableRides = async () => {
+    try {
       setLoading(true)
       setError('')
       
-      const response = await apiService.searchRides({
-        source: '',
-        destination: '',
-        date: '',
-        maxPrice: ''
-      })
+      // Use search with empty filters to get all available rides
+      const response = await apiService.searchRides({})
+      console.log('All rides response:', response)
       
-      console.log('API Response:', response)
-      
-      // Handle the correct response format based on the Postman response
-      let ridesArray = []
-      
-      if (response && response.status === 'SUCCESS' && response.data && response.data.content) {
-        // Backend returns: { status: "SUCCESS", data: { content: [...] } }
-        ridesArray = response.data.content
-      } else if (response && Array.isArray(response)) {
-        // In case response is directly an array
-        ridesArray = response
-      } else if (response && response.data && Array.isArray(response.data)) {
-        // In case response is { data: [...] }
-        ridesArray = response.data
+      if (response && response.status === 'SUCCESS' && response.data) {
+        // Handle Spring Boot Page response
+        let ridesData = []
+        if (response.data.content && Array.isArray(response.data.content)) {
+          ridesData = response.data.content
+        } else if (Array.isArray(response.data)) {
+          ridesData = response.data
+        }
+        setAvailableRides(ridesData)
+        setSearchPerformed(true) // Ensure this is always set
+        
+        if (ridesData.length === 0) {
+          setError('No rides available at the moment.')
+        }
       } else {
-        console.log('Unexpected response format:', response)
-        ridesArray = []
+        setAvailableRides([])
+        setError('No rides available at the moment.')
       }
-      
-      console.log('Extracted rides array:', ridesArray)
-      
-      // Filter to show only future rides
-      const currentDateTime = new Date()
-      const futureRides = ridesArray.filter(ride => {
-        const rideDateTime = new Date(ride.departureDate) // departureDate is already in ISO format
-        return rideDateTime > currentDateTime && ride.status === 'ACTIVE'
-      })
-      
-      setAvailableRides(futureRides)
-      console.log('Future rides loaded:', futureRides)
-      
     } catch (error) {
-      console.error('Error loading rides:', error)
-      setError('Failed to load available rides')
+      console.error('Error fetching rides:', error)
+      setError('Failed to load rides. Please try again.')
+      setAvailableRides([])
     } finally {
       setLoading(false)
     }
   }
 
-  // Update the handleSearch function with the same logic
   const handleSearch = async (e) => {
     e.preventDefault()
+    
+    if (!searchFilters.from || !searchFilters.to) {
+      setError('Please enter both pickup and drop-off locations.')
+      return
+    }
+
     try {
       setLoading(true)
       setError('')
       
-      const response = await apiService.searchRides(searchFilters)
-      console.log('Search Response:', response)
-      
-      // Handle the correct response format
-      let ridesArray = []
-      
-      if (response && response.status === 'SUCCESS' && response.data && response.data.content) {
-        ridesArray = response.data.content
-      } else if (response && Array.isArray(response)) {
-        ridesArray = response
-      } else if (response && response.data && Array.isArray(response.data)) {
-        ridesArray = response.data
-      } else {
-        console.log('Unexpected search response format:', response)
-        ridesArray = []
+      // Use the searchRides API method with proper parameters
+      const searchParams = {
+        source: searchFilters.from,
+        destination: searchFilters.to,
+        departureDate: searchFilters.date ? `${searchFilters.date}T00:00:00` : null,
+        maxPrice: searchFilters.maxPrice ? parseFloat(searchFilters.maxPrice) : null
       }
       
-      // Filter to show only future rides
-      const currentDateTime = new Date()
-      const futureRides = ridesArray.filter(ride => {
-        const rideDateTime = new Date(ride.departureDate)
-        return rideDateTime > currentDateTime && ride.status === 'ACTIVE'
-      })
+      console.log('🔍 Search parameters being sent:', searchParams)
+      const response = await apiService.searchRides(searchParams)
+      console.log('🔍 Complete API response:', response)
+      console.log('🔍 Response data type:', typeof response.data)
+      console.log('🔍 Response data content:', response.data)
       
-      setAvailableRides(futureRides)
-      setSearchPerformed(true)
-      
+      if (response && response.status === 'SUCCESS' && response.data) {
+        // Handle Spring Boot Page response
+        let ridesData = []
+        if (response.data.content && Array.isArray(response.data.content)) {
+          ridesData = response.data.content
+          console.log('📄 Using Page.content:', ridesData)
+        } else if (Array.isArray(response.data)) {
+          ridesData = response.data
+          console.log('📄 Using direct array:', ridesData)
+        } else {
+          console.log('📄 Unexpected data structure:', response.data)
+        }
+        
+        console.log('🎯 Final ridesData:', ridesData)
+        setAvailableRides(ridesData)
+        setSearchPerformed(true)
+        
+        if (ridesData.length === 0) {
+          setError('No rides found matching your criteria. Try adjusting your search.')
+        }
+      } else {
+        console.log('❌ API response failed or no data')
+        setAvailableRides([])
+        setError('No rides available for your search criteria.')
+      }
     } catch (error) {
-      console.error('Error searching rides:', error)
-      setError('Failed to search rides')
+      console.error('❌ Error searching rides:', error)
+      setError('Failed to search rides. Please try again.')
+      setAvailableRides([])
     } finally {
       setLoading(false)
     }
   }
 
-  // Update the handleBookRide function to collect pickup point
-  const handleBookRide = async (rideId, seatsToBook = 1) => {
+  const handleBooking = async (ride, seats) => {
     try {
-      setLoading(true)
-      setError('')
-      
-      // Prompt user for pickup point
-      const pickupPoint = prompt('Enter your pickup point:')
-      if (!pickupPoint || pickupPoint.trim() === '') {
-        alert('Pickup point is required!')
-        return
-      }
-      
-      // Get user info from props or localStorage
-      const userInfo = user || JSON.parse(localStorage.getItem('user') || '{}')
-      
-      const response = await apiService.bookRide(
-        rideId, 
-        seatsToBook,
-        userInfo.firstName || userInfo.name || "Passenger",
-        userInfo.phoneNumber || userInfo.phone || "0000000000",
-        pickupPoint.trim()
-      )
-      
+      console.log('Creating booking for ride:', ride.id, 'seats:', seats)
+      const response = await apiService.createBooking(ride.id, seats)
       console.log('Booking response:', response)
       
-      if (response && (response.status === 'SUCCESS' || response.message)) {
-        alert('Ride booked successfully! Status: PENDING (waiting for driver confirmation)')
-        // Refresh rides and bookings
-        await loadAllRides()
+      if (response && response.status === 'SUCCESS' && response.data) {
+        // Show success message and refresh bookings
+        alert('Booking created successfully! Please check your booking history. Payment will be available after driver confirmation.')
+        
+        // Refresh the bookings list to show the new booking
         await fetchBookings()
-        // Reset seat selection
-        setSelectedSeats(prev => ({
-          ...prev,
-          [rideId]: 1
-        }))
+        
+        // Switch to bookings tab to show the new booking
+        setActiveTab('bookings')
+        
+        // Clear any previous errors
+        setError('')
       } else {
-        throw new Error('Booking failed')
+        setError('Failed to create booking. Please try again.')
       }
     } catch (error) {
-      console.error('Error booking ride:', error)
-      setError(`Failed to book ride: ${error.message}`)
-      alert(`Failed to book ride: ${error.message}`)
-    } finally {
-      setLoading(false)
+      console.error('Error creating booking:', error)
+      setError('Failed to book ride. Please try again.')
     }
   }
 
   const handleCancelBooking = async (bookingId) => {
+    if (!window.confirm('Are you sure you want to cancel this booking?')) {
+      return
+    }
+
     try {
       setLoading(true)
       const response = await apiService.cancelBooking(bookingId)
-      if (response.status === 'SUCCESS') {
+      
+      if (response && response.status === 'SUCCESS') {
+        await fetchBookings() // Refresh bookings
         alert('Booking cancelled successfully!')
-        fetchBookings() // Refresh bookings
       } else {
-        alert(response.message || 'Cancellation failed')
+        alert('Failed to cancel booking. Please try again.')
       }
-    } catch (err) {
-      alert(err.message || 'Cancellation failed')
+    } catch (error) {
+      console.error('Error cancelling booking:', error)
+      alert('Failed to cancel booking. Please try again.')
     } finally {
       setLoading(false)
     }
   }
 
-  // Update the ride card display to match the design in your image
-  const renderRideCard = (ride) => {
-    const selectedSeatsCount = selectedSeats[ride.id] || 1
-    const totalPrice = ride.pricePerSeat * selectedSeatsCount
-
-    return (
-      <div key={ride.id} className="bg-white rounded-lg shadow-md p-6 border border-gray-200 hover:shadow-lg transition-shadow">
-        {/* Route Header */}
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center space-x-2">
-            <h3 className="text-lg font-semibold text-gray-900">
-              {ride.source} → {ride.destination}
-            </h3>
-            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-              ride.status === 'ACTIVE' ? 'bg-blue-100 text-blue-800' : 
-              ride.status === 'FULL' ? 'bg-orange-100 text-orange-800' : 
-              'bg-gray-100 text-gray-800'
-            }`}>
-              {ride.status?.toLowerCase()}
-            </span>
-          </div>
-          <div className="text-right">
-            <p className="text-2xl font-bold text-yellow-600">₹{ride.pricePerSeat}</p>
-            <p className="text-sm text-gray-500">per seat</p>
-          </div>
-        </div>
-
-        {/* Ride Details Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
-          {/* Date & Time */}
-          <div className="flex items-center space-x-2 text-gray-600">
-            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd"/>
-            </svg>
-            <div>
-              <p className="text-xs text-gray-500">Date & Time</p>
-              <p className="text-sm font-medium">
-                {new Date(ride.departureDate).toLocaleDateString()} {new Date(ride.departureDate).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-              </p>
-            </div>
-          </div>
-
-          {/* Available Seats */}
-          <div className="flex items-center space-x-2 text-gray-600">
-            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-              <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z"/>
-            </svg>
-            <div>
-              <p className="text-xs text-gray-500">Available Seats</p>
-              <p className="text-sm font-medium">
-                {ride.availableSeats}/{ride.totalSeats} seats
-              </p>
-            </div>
-          </div>
-
-          {/* Vehicle Type */}
-          <div className="flex items-center space-x-2 text-gray-600">
-            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-              <path d="M8 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM15 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z"/>
-              <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v1h-1a1 1 0 00-1 1v5H5V6a1 1 0 00-1-1H3V4zM4 8h12v6a1 1 0 01-1 1H5a1 1 0 01-1-1V8z"/>
-            </svg>
-            <div>
-              <p className="text-xs text-gray-500">Vehicle Type</p>
-              <p className="text-sm font-medium">{ride.vehicleType}</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Vehicle Details Section */}
-        <div className="mb-4 p-3 bg-gray-50 rounded-lg">
-          <h4 className="text-sm font-medium text-gray-900 mb-2">Vehicle Details</h4>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
-            <div>
-              <p className="text-gray-500">Model</p>
-              <p className="font-medium text-gray-900">{ride.vehicleModel}</p>
-            </div>
-            <div>
-              <p className="text-gray-500">Color</p>
-              <p className="font-medium text-gray-900">{ride.vehicleColor}</p>
-            </div>
-            <div>
-              <p className="text-gray-500">Number</p>
-              <p className="font-medium text-gray-900">{ride.vehicleNumber}</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Driver Info Section */}
-        <div className="mb-4 p-3 bg-blue-50 rounded-lg">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-yellow-500 rounded-full flex items-center justify-center">
-              <span className="text-white font-semibold text-sm">
-                {ride.driverName ? ride.driverName.charAt(0).toUpperCase() : 'D'}
-              </span>
-            </div>
-            <div className="flex-1">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-900">
-                    {ride.driverName}
-                  </p>
-                  <p className="text-xs text-gray-600">
-                    📞 {ride.driverPhone}
-                  </p>
-                </div>
-                <div className="flex items-center space-x-1">
-                  <svg className="w-4 h-4 text-yellow-400 fill-current" viewBox="0 0 20 20">
-                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
-                  </svg>
-                  <span className="text-sm text-gray-600">4.5</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Notes */}
-        {ride.notes && (
-          <div className="mb-4 p-3 bg-yellow-50 rounded-lg">
-            <p className="text-sm text-gray-700">
-              <span className="font-medium">Notes:</span> {ride.notes}
-            </p>
-          </div>
-        )}
-
-        {/* Booking Section */}
-        <div className="border-t border-gray-200 pt-4">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center space-x-3">
-              <label className="text-sm font-medium text-gray-700">Seats:</label>
-              <select
-                value={selectedSeatsCount}
-                onChange={(e) => setSelectedSeats(prev => ({
-                  ...prev,
-                  [ride.id]: parseInt(e.target.value)
-                }))}
-                className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
-                disabled={ride.availableSeats === 0}
-              >
-                {[...Array(Math.min(4, ride.availableSeats))].map((_, i) => (
-                  <option key={i + 1} value={i + 1}>
-                    {i + 1} seat{i > 0 ? 's' : ''}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="text-right">
-              <p className="text-sm text-gray-600">Total Amount:</p>
-              <p className="text-xl font-bold text-gray-900">₹{totalPrice}</p>
-            </div>
-          </div>
-
-          <button
-            onClick={() => handleBookRide(ride.id, selectedSeatsCount)}
-            disabled={ride.availableSeats === 0 || loading}
-            className={`w-full py-3 px-4 rounded-lg font-medium text-sm transition-colors ${
-              ride.availableSeats === 0
-                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                : 'bg-yellow-500 hover:bg-yellow-600 text-white'
-            }`}
-          >
-            {ride.availableSeats === 0 ? 'Fully Booked' : 'Book Now'}
-          </button>
-        </div>
-      </div>
-    )
+  const closePaymentModal = () => {
+    setPaymentModal({
+      isOpen: false,
+      booking: null
+    })
   }
 
-  // Update the stats calculation to use only active bookings
-  const stats = {
-    ridesCompleted: rideHistory.filter(booking => booking.status === 'COMPLETED').length,
-    totalSpent: rideHistory.reduce((sum, booking) => {
-      if (booking.status === 'COMPLETED') {
-        return sum + (booking.totalAmount || 0)
-      }
-      return sum
-    }, 0),
-    avgRating: 5.0, // You can calculate this from completed rides
-    activeBookings: bookings.length
+  const handlePaymentSuccess = (paymentResult) => {
+    console.log('Payment successful:', paymentResult)
+    closePaymentModal()
+    fetchBookings() // Refresh bookings after successful payment
+    alert('Payment successful! Your ride is confirmed.')
+  }
+
+  // Location suggestion handlers
+  const getFilteredSuggestions = (input) => {
+    if (!input) return []
+    return locationSuggestions.filter(location => 
+      location.toLowerCase().includes(input.toLowerCase())
+    ).slice(0, 5)
+  }
+
+  const handleLocationSelect = (location, field) => {
+    setSearchFilters(prev => ({ ...prev, [field]: location }))
+    setShowFromSuggestions(false)
+    setShowToSuggestions(false)
+  }
+
+  const handleFromInputChange = (e) => {
+    const value = e.target.value
+    setSearchFilters(prev => ({ ...prev, from: value }))
+    setShowFromSuggestions(value.length > 0)
+    // Clear coordinates when typing manually
+    if (!value) setFromCoords(null)
+  }
+
+  const handleToInputChange = (e) => {
+    const value = e.target.value
+    setSearchFilters(prev => ({ ...prev, to: value }))
+    setShowToSuggestions(value.length > 0)
+    // Clear coordinates when typing manually
+    if (!value) setToCoords(null)
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Passenger Dashboard</h1>
-          <p className="text-gray-600 mt-2">Welcome back, {user.name}!</p>
-        </div>
-
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <div className="flex items-center">
-              <Search className="h-8 w-8 text-yellow-500" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-500">Rides Taken</p>
-                <p className="text-2xl font-bold text-gray-900">{rideHistory.filter(b => b.status === 'COMPLETED').length}</p>
-              </div>
-            </div>
+    <div className="h-screen bg-gray-50 flex flex-col">
+      {/* Header */}
+      <div className="bg-white shadow-sm px-6 py-4">
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Welcome back, {user?.firstName}!</h1>
+            <p className="text-gray-600">Find your perfect ride</p>
           </div>
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <div className="flex items-center">
-              <IndianRupee className="h-8 w-8 text-green-500" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-500">Total Spent</p>
-                <p className="text-2xl font-bold text-gray-900">₹{rideHistory.reduce((sum, booking) => sum + (booking.totalAmount || 0), 0)}</p>
-              </div>
-            </div>
-          </div>
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <div className="flex items-center">
-              <Star className="h-8 w-8 text-blue-500" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-500">Avg Rating</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {rideHistory.length > 0 
-                    ? (rideHistory.reduce((sum, b) => sum + (b.rating || 5), 0) / rideHistory.length).toFixed(1)
-                    : '5.0'
-                  }
-                </p>
-              </div>
-            </div>
-          </div>
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <div className="flex items-center">
-              <Calendar className="h-8 w-8 text-purple-500" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-500">Active Bookings</p>
-                <p className="text-2xl font-bold text-gray-900">{bookings.length}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Tab Navigation */}
-        <div className="bg-white rounded-lg shadow-sm mb-8">
-          <div className="border-b border-gray-200">
-            <nav className="flex space-x-8 px-6">
-              <button
-                onClick={() => setActiveTab('search')}
-                className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === 'search'
-                    ? 'border-yellow-500 text-yellow-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                Search Rides
-              </button>
-              <button
-                onClick={() => setActiveTab('bookings')}
-                className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === 'bookings'
-                    ? 'border-yellow-500 text-yellow-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                My Bookings ({bookings.length})
-              </button>
-              <button
-                onClick={() => setActiveTab('history')}
-                className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === 'history'
-                    ? 'border-yellow-500 text-yellow-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                Ride History ({rideHistory.length})
-              </button>
-            </nav>
-          </div>
-
-          <div className="p-6">
-            {activeTab === 'search' && (
-              <div>
-                <h3 className="text-lg font-medium text-gray-900 mb-6">Find Your Perfect Ride</h3>
-                
-                {/* Search Form */}
-                <form onSubmit={handleSearch} className="bg-gray-50 rounded-lg p-6 mb-8">
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">From</label>
-                      <div className="relative">
-                        <MapPin className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-                        <input
-                          type="text"
-                          value={searchFilters.from}
-                          onChange={(e) => setSearchFilters({...searchFilters, from: e.target.value})}
-                          className="w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
-                          placeholder="Departure city"
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">To</label>
-                      <div className="relative">
-                        <MapPin className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-                        <input
-                          type="text"
-                          value={searchFilters.to}
-                          onChange={(e) => setSearchFilters({...searchFilters, to: e.target.value})}
-                          className="w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
-                          placeholder="Destination city"
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Date</label>
-                      <input
-                        type="date"
-                        value={searchFilters.date}
-                        min={new Date().toISOString().split('T')[0]} // Set minimum date to today
-                        onChange={(e) => setSearchFilters({...searchFilters, date: e.target.value})}
-                        className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Max Price</label>
-                      <div className="relative">
-                        <IndianRupee className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-                        <input
-                          type="number"
-                          value={searchFilters.maxPrice}
-                          onChange={(e) => setSearchFilters({...searchFilters, maxPrice: e.target.value})}
-                          className="w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
-                          placeholder="0"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="w-full bg-yellow-500 hover:bg-yellow-600 disabled:bg-yellow-300 text-white py-3 px-4 rounded-lg font-semibold transition-colors flex items-center justify-center space-x-2"
-                  >
-                    <Search className="h-5 w-5" />
-                    <span>{loading ? 'Searching...' : 'Search Rides'}</span>
-                  </button>
-                </form>
-
-                {error && (
-                  <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4 text-red-700 text-sm">
-                    {error}
-                  </div>
-                )}
-
-                {/* Available Rides */}
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h4 className="text-lg font-medium text-gray-900">
-                      {searchPerformed ? 'Search Results' : 'Available Rides'}
-                    </h4>
-                    <button 
-                      onClick={loadAllRides}
-                      className="flex items-center space-x-2 text-gray-600 hover:text-gray-800"
-                    >
-                      <Filter className="h-4 w-4" />
-                      <span className="text-sm">Refresh Rides</span>
-                    </button>
-                  </div>
-
-                  {loading && (
-                    <div className="text-center py-8">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-500 mx-auto"></div>
-                      <p className="mt-2 text-gray-600">Loading rides...</p>
-                    </div>
-                  )}
-
-                  {!loading && availableRides.length > 0 && (
-                    <div className="grid gap-6">
-                      {availableRides.map(renderRideCard)}
-                    </div>
-                  )}
-
-                  {!loading && searchPerformed && availableRides.length === 0 && (
-                    <div className="text-center py-8 text-gray-500">
-                      No rides found for your search criteria. Try adjusting your filters.
-                    </div>
-                  )}
-
-                  {!loading && !searchPerformed && availableRides.length === 0 && (
-                    <div className="text-center py-8 text-gray-500">
-                      Use the search form above to find available rides.
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {activeTab === 'bookings' && (
-              <div>
-                <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-lg font-medium text-gray-900">My Active Bookings</h3>
-                  <button 
-                    onClick={fetchBookings}
-                    className="flex items-center space-x-2 text-gray-600 hover:text-gray-800"
-                  >
-                    <RefreshCw className="h-4 w-4" />
-                    <span className="text-sm">Refresh</span>
-                  </button>
-                </div>
-
-                {error && (
-                  <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4 text-red-700 text-sm">
-                    {error}
-                  </div>
-                )}
-
-                {loading && (
-                  <div className="text-center py-8">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-500 mx-auto"></div>
-                    <p className="mt-2 text-gray-600">Loading bookings...</p>
-                  </div>
-                )}
-
-                {!loading && bookings.length > 0 && (
-                  <div className="space-y-4">
-                    {bookings.map((booking) => (
-                      <div key={booking.id} className="bg-white rounded-lg shadow-md p-6 border border-gray-200">
-                        {/* Driver Info */}
-                        <div className="flex items-center justify-between mb-4">
-                          <div className="flex items-center space-x-3">
-                            <div className="w-10 h-10 bg-yellow-500 rounded-full flex items-center justify-center">
-                              <span className="text-white font-semibold text-sm">
-                                {booking.driverName ? booking.driverName.charAt(0).toUpperCase() : 'D'}
-                              </span>
-                            </div>
-                            <div>
-                              <h4 className="font-medium text-gray-900">{booking.driverName || 'Driver'}</h4>
-                              <p className="text-sm text-gray-600">{booking.source} → {booking.destination}</p>
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <div className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                              booking.status === 'CONFIRMED' 
-                                ? 'bg-green-100 text-green-800' 
-                                : booking.status === 'PENDING'
-                                ? 'bg-yellow-100 text-yellow-800'
-                                : 'bg-red-100 text-red-800'
-                            }`}>
-                              {booking.status}
-                            </div>
-                            <p className="text-lg font-bold text-gray-900 mt-1">₹{booking.totalAmount}</p>
-                          </div>
-                        </div>
-
-                        {/* Booking Details Grid */}
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4 text-sm">
-                          <div>
-                            <p className="text-gray-500">Date & Time</p>
-                            <p className="font-medium">{new Date(booking.departureDate).toLocaleDateString()} at {new Date(booking.departureDate).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
-                          </div>
-                          <div>
-                            <p className="text-gray-500">Seats Booked</p>
-                            <p className="font-medium">{booking.seatsBooked}</p>
-                          </div>
-                          <div>
-                            <p className="text-gray-500">Vehicle</p>
-                            <p className="font-medium">{booking.vehicleModel || 'N/A'}</p>
-                          </div>
-                          <div>
-                            <p className="text-gray-500">Booking Date</p>
-                            <p className="font-medium">{new Date(booking.bookingDate).toLocaleDateString()}</p>
-                          </div>
-                        </div>
-
-                        {/* Pickup Point */}
-                        {booking.pickupPoint && (
-                          <div className="mb-4 p-3 bg-gray-50 rounded-lg">
-                            <p className="text-sm text-gray-600">
-                              <span className="font-medium">Pickup:</span> {booking.pickupPoint}
-                            </p>
-                          </div>
-                        )}
-
-                        {/* Status Message */}
-                        <div className="mb-4 p-3 rounded-lg bg-blue-50">
-                          <p className="text-sm text-blue-700">
-                            {booking.status === 'PENDING' && '⏳ Waiting for driver confirmation'}
-                            {booking.status === 'CONFIRMED' && '✅ Booking confirmed by driver'}
-                          </p>
-                        </div>
-
-                        {/* Driver Contact */}
-                        {booking.status === 'CONFIRMED' && (
-                          <div className="mb-4 p-3 bg-green-50 rounded-lg">
-                            <p className="text-sm text-green-700">
-                              <span className="font-medium">Driver Contact:</span> {booking.driverPhone || 'N/A'}
-                            </p>
-                          </div>
-                        )}
-
-                        {/* Cancel Button - Only for PENDING and CONFIRMED bookings */}
-                        {(booking.status === 'PENDING' || booking.status === 'CONFIRMED') && (
-                          <div className="flex justify-end">
-                            <button
-                              onClick={() => handleCancelBooking(booking.id)}
-                              disabled={loading}
-                              className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                              Cancel Booking
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {!loading && bookings.length === 0 && (
-                  <div className="text-center py-12 bg-gray-50 rounded-lg">
-                    <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">No Active Bookings</h3>
-                    <p className="text-gray-600 mb-4">You don't have any active bookings at the moment.</p>
-                    <button
-                      onClick={() => setActiveTab('search')}
-                      className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-lg font-medium transition-colors"
-                    >
-                      Search for Rides
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {activeTab === 'history' && (
-              <div>
-                <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-lg font-medium text-gray-900">Ride History</h3>
-                  <button 
-                    onClick={fetchBookings}
-                    className="flex items-center space-x-2 text-gray-600 hover:text-gray-800"
-                  >
-                    <RefreshCw className="h-4 w-4" />
-                    <span className="text-sm">Refresh</span>
-                  </button>
-                </div>
-
-                {error && (
-                  <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4 text-red-700 text-sm">
-                    {error}
-                  </div>
-                )}
-
-                {loading && (
-                  <div className="text-center py-8">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-500 mx-auto"></div>
-                    <p className="mt-2 text-gray-600">Loading ride history...</p>
-                  </div>
-                )}
-
-                {!loading && rideHistory.length > 0 && (
-                  <div className="space-y-4">
-                    {rideHistory.map((booking) => (
-                      <div key={booking.id} className="bg-white rounded-lg shadow-md p-6 border border-gray-200">
-                        {/* Driver Info */}
-                        <div className="flex items-center justify-between mb-4">
-                          <div className="flex items-center space-x-3">
-                            <div className="w-10 h-10 bg-gray-400 rounded-full flex items-center justify-center">
-                              <span className="text-white font-semibold text-sm">
-                                {booking.driverName ? booking.driverName.charAt(0).toUpperCase() : 'D'}
-                              </span>
-                            </div>
-                            <div>
-                              <h4 className="font-medium text-gray-900">{booking.driverName || 'Driver'}</h4>
-                              <p className="text-sm text-gray-600">{booking.source} → {booking.destination}</p>
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <div className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                              booking.status === 'COMPLETED' 
-                                ? 'bg-green-100 text-green-800' 
-                                : 'bg-red-100 text-red-800'
-                            }`}>
-                              {booking.status}
-                            </div>
-                            <p className="text-lg font-bold text-gray-900 mt-1">₹{booking.totalAmount}</p>
-                          </div>
-                        </div>
-
-                        {/* Booking Details Grid */}
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4 text-sm">
-                          <div>
-                            <p className="text-gray-500">Date & Time</p>
-                            <p className="font-medium">{new Date(booking.departureDate).toLocaleDateString()} at {new Date(booking.departureDate).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
-                          </div>
-                          <div>
-                            <p className="text-gray-500">Seats Booked</p>
-                            <p className="font-medium">{booking.seatsBooked}</p>
-                          </div>
-                          <div>
-                            <p className="text-gray-500">Vehicle</p>
-                            <p className="font-medium">{booking.vehicleModel || 'N/A'}</p>
-                          </div>
-                          <div>
-                            <p className="text-gray-500">Booking Date</p>
-                            <p className="font-medium">{new Date(booking.bookingDate).toLocaleDateString()}</p>
-                          </div>
-                        </div>
-
-                        {/* Pickup Point */}
-                        {booking.pickupPoint && (
-                          <div className="mb-4 p-3 bg-gray-50 rounded-lg">
-                            <p className="text-sm text-gray-600">
-                              <span className="font-medium">Pickup:</span> {booking.pickupPoint}
-                            </p>
-                          </div>
-                        )}
-
-                        {/* Final Status Message */}
-                        <div className={`mb-4 p-3 rounded-lg ${
-                          booking.status === 'COMPLETED' ? 'bg-green-50' : 'bg-red-50'
-                        }`}>
-                          <p className={`text-sm ${
-                            booking.status === 'COMPLETED' ? 'text-green-700' : 'text-red-700'
-                          }`}>
-                            {booking.status === 'COMPLETED' && '✅ This booking has been completed successfully.'}
-                            {booking.status === 'CANCELLED' && '❌ This booking has been cancelled.'}
-                          </p>
-                        </div>
-
-                        {/* Driver Contact for completed rides */}
-                        {booking.status === 'COMPLETED' && (
-                          <div className="mb-4 p-3 bg-gray-50 rounded-lg">
-                            <p className="text-sm text-gray-600">
-                              <span className="font-medium">Driver Contact:</span> {booking.driverPhone || 'N/A'}
-                            </p>
-                          </div>
-                        )}
-
-                        {/* Add Rating Button for completed rides */}
-                        {booking.status === 'COMPLETED' && (
-                          <div className="flex justify-end">
-                            <button
-                              className="px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg text-sm font-medium transition-colors"
-                              onClick={() => {
-                                // Add rating functionality later
-                                alert('Rating functionality coming soon!')
-                              }}
-                            >
-                              Rate Driver
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {!loading && rideHistory.length === 0 && (
-                  <div className="text-center py-12 bg-gray-50 rounded-lg">
-                    <Clock className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">No Ride History</h3>
-                    <p className="text-gray-600 mb-4">You haven't completed any rides yet.</p>
-                    <button
-                      onClick={() => setActiveTab('search')}
-                      className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-lg font-medium transition-colors"
-                    >
-                      Book Your First Ride
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
+          
+          {/* Tab Navigation - Horizontal */}
+          <div className="flex space-x-1 bg-yellow-500  rounded-lg p-1">
+            <button
+              onClick={() => setActiveTab('search')}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                activeTab === 'search' 
+                  ? 'bg-white text-gray-900 shadow-sm' 
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Search Rides
+            </button>
+            <button
+              onClick={() => setActiveTab('bookings')}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                activeTab === 'bookings' 
+                  ? 'bg-white text-gray-900 shadow-sm' 
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              My Bookings ({bookings.length})
+            </button>
+            <button
+              onClick={() => setActiveTab('history')}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                activeTab === 'history' 
+                  ? 'bg-white text-gray-900 shadow-sm' 
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Ride History ({rideHistory.length})
+            </button>
+            <button
+              onClick={() => setActiveTab('payments')}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                activeTab === 'payments' 
+                  ? 'bg-white text-gray-900 shadow-sm' 
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Payment History
+            </button>
           </div>
         </div>
       </div>
+
+      {/* Main Content - Two Column Layout for Search Tab */}
+      {activeTab === 'search' && (
+        <div className="flex-1 flex">
+          {/* Left Panel - Search Form */}
+          <div className="w-2/5 bg-white border-r border-gray-200 overflow-y-auto">
+            <div className="p-6">
+              <h2 className="text-xl font-semibold mb-6">Get ready for your first trip</h2>
+              <p className="text-gray-600 mb-8">Discover the convenience of SmartRide. Request a ride now, or schedule one for later directly from your browser.</p>
+              
+              {/* Search Form */}
+              <div className="space-y-4">
+                <div className="relative">
+                  <div className="relative">
+                    <div className="absolute left-3 top-3">
+                      <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                    </div>
+                    <input
+                      type="text"
+                      placeholder="Pickup location"
+                      value={searchFilters.from}
+                      onChange={handleFromInputChange}
+                      onFocus={() => setShowFromSuggestions(searchFilters.from.length > 0)}
+                      onBlur={() => setTimeout(() => setShowFromSuggestions(false), 200)}
+                      className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                    />
+                    {geocodingLoading.from && (
+                      <div className="absolute right-3 top-3">
+                        <div className="animate-spin w-4 h-4 border-2 border-gray-300 border-t-yellow-500 rounded-full"></div>
+                      </div>
+                    )}
+                    {!geocodingLoading.from && fromCoords && (
+                      <div className="absolute right-3 top-3">
+                        <div className="w-4 h-4 bg-green-500 rounded-full flex items-center justify-center">
+                          <div className="w-2 h-2 bg-white rounded-full"></div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  {/* From Suggestions Dropdown */}
+                  {showFromSuggestions && (
+                    <div className="absolute z-10 w-full bg-white border border-gray-200 rounded-lg mt-1 shadow-lg max-h-48 overflow-y-auto">
+                      {getFilteredSuggestions(searchFilters.from).map((location, index) => (
+                        <button
+                          key={index}
+                          onClick={() => handleLocationSelect(location, 'from')}
+                          className="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center gap-2"
+                        >
+                          <MapPin className="h-4 w-4 text-gray-400" />
+                          {location}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                
+                <div className="relative">
+                  <div className="relative">
+                    <div className="absolute left-3 top-3">
+                      <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                    </div>
+                    <input
+                      type="text"
+                      placeholder="Dropoff location"
+                      value={searchFilters.to}
+                      onChange={handleToInputChange}
+                      onFocus={() => setShowToSuggestions(searchFilters.to.length > 0)}
+                      onBlur={() => setTimeout(() => setShowToSuggestions(false), 200)}
+                      className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                    />
+                    {geocodingLoading.to && (
+                      <div className="absolute right-3 top-3">
+                        <div className="animate-spin w-4 h-4 border-2 border-gray-300 border-t-yellow-500 rounded-full"></div>
+                      </div>
+                    )}
+                    {!geocodingLoading.to && toCoords && (
+                      <div className="absolute right-3 top-3">
+                        <div className="w-4 h-4 bg-green-500 rounded-full flex items-center justify-center">
+                          <div className="w-2 h-2 bg-white rounded-full"></div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  {/* To Suggestions Dropdown */}
+                  {showToSuggestions && (
+                    <div className="absolute z-10 w-full bg-white border border-gray-200 rounded-lg mt-1 shadow-lg max-h-48 overflow-y-auto">
+                      {getFilteredSuggestions(searchFilters.to).map((location, index) => (
+                        <button
+                          key={index}
+                          onClick={() => handleLocationSelect(location, 'to')}
+                          className="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center gap-2"
+                        >
+                          <MapPin className="h-4 w-4 text-gray-400" />
+                          {location}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <input
+                    type="date"
+                    value={searchFilters.date}
+                    onChange={(e) => setSearchFilters(prev => ({ ...prev, date: e.target.value }))}
+                    className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                  />
+                  <input
+                    type="number"
+                    placeholder="Max Price (₹)"
+                    value={searchFilters.maxPrice}
+                    onChange={(e) => setSearchFilters(prev => ({ ...prev, maxPrice: e.target.value }))}
+                    className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                  />
+                </div>
+                
+                <button
+                  onClick={handleSearch}
+                  disabled={loading || !searchFilters.from || !searchFilters.to}
+                  className="w-full bg-yellow-500 text-white py-3 rounded-lg font-medium hover:bg-yellow-600 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+                >
+                  {loading ? 'Searching...' : 'See prices'}
+                </button>
+              </div>
+
+              {/* Available Rides */}
+              {searchPerformed && (
+                <div className="mt-8">
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-lg font-semibold">Available Rides</h3>
+                    <button 
+                      onClick={fetchAvailableRides}
+                      className="text-gray-600 hover:text-gray-900"
+                    >
+                      <RefreshCw className="h-5 w-5" />
+                    </button>
+                  </div>
+                  
+                  {loading && (
+                    <div className="text-center py-8">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-500 mx-auto"></div>
+                      <p className="mt-2 text-gray-600">Finding rides...</p>
+                    </div>
+                  )}
+
+                  {error && (
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700">
+                      {error}
+                    </div>
+                  )}
+
+                  {!loading && Array.isArray(availableRides) && availableRides.length === 0 && searchPerformed && (
+                    <div className="text-center py-8 text-gray-500">
+                      <Car className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                      <p>No rides found for your search criteria.</p>
+                      <p className="text-sm">Try adjusting your filters or search again.</p>
+                    </div>
+                  )}
+
+                  <div className="space-y-4">
+                    {Array.isArray(availableRides) && availableRides.length > 0 ? availableRides.map((ride) => (
+                      <div key={ride.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow bg-white">
+                        <div className="flex justify-between items-start mb-4">
+                          <div className="flex-1 pr-4">
+                            <div className="flex items-center gap-2 mb-3">
+                              <MapPin className="h-4 w-4 text-green-500 flex-shrink-0" />
+                              <span className="text-sm font-medium">{ride.source || 'Unknown'}</span>
+                              <span className="text-gray-400">→</span>
+                              <MapPin className="h-4 w-4 text-red-500 flex-shrink-0" />
+                              <span className="text-sm font-medium">{ride.destination || 'Unknown'}</span>
+                            </div>
+                            <div className="flex items-center gap-4 text-sm text-gray-600 mb-3">
+                              <div className="flex items-center gap-1">
+                                <Calendar className="h-4 w-4 flex-shrink-0" />
+                                <span>{ride.departureTime ? new Date(ride.departureTime).toLocaleDateString() : 'No date'}</span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Clock className="h-4 w-4 flex-shrink-0" />
+                                <span>{ride.departureTime ? new Date(ride.departureTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'No time'}</span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Users className="h-4 w-4 flex-shrink-0" />
+                                <span>{ride.availableSeats || 0} seats</span>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="text-right flex-shrink-0">
+                            <div className="text-lg font-bold text-gray-900">₹{ride.pricePerSeat || 0}</div>
+                            <div className="text-sm text-gray-500">per person</div>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center flex-shrink-0">
+                              <span className="text-sm font-medium">
+                                {ride.driverName?.[0] || ride.driver?.firstName?.[0] || 'D'}
+                              </span>
+                            </div>
+                            <span className="text-sm font-medium">
+                              {ride.driverName || ride.driver?.firstName || 'Driver'} {ride.driver?.lastName || ''}
+                            </span>
+                          </div>
+                          
+                          <div className="flex items-center gap-2">
+                            <select
+                              value={selectedSeats[ride.id] || 1}
+                              onChange={(e) => setSelectedSeats(prev => ({ ...prev, [ride.id]: parseInt(e.target.value) }))}
+                              className="px-2 py-1 border border-gray-300 rounded text-sm"
+                            >
+                              {[...Array(Math.min(ride.availableSeats || 1, 4))].map((_, i) => (
+                                <option key={i + 1} value={i + 1}>{i + 1} seat{i > 0 ? 's' : ''}</option>
+                              ))}
+                            </select>
+                            <button
+                              onClick={() => handleBooking(ride, selectedSeats[ride.id] || 1)}
+                              className="bg-yellow-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-yellow-600 transition-colors"
+                            >
+                              Book Now
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )) : (
+                      <div className="text-center py-8 text-gray-500">
+                        <Car className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                        <p>No rides available.</p>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* View All Rides Button */}
+                  {Array.isArray(availableRides) && availableRides.length > 0 && !showAllRides && (
+                    <div className="text-center mt-4">
+                      <button
+                        onClick={() => {
+                          setShowAllRides(true)
+                          loadAllRides()
+                        }}
+                        className="bg-yellow-500 text-white px-6 py-2 rounded-lg font-medium hover:bg-yellow-600 transition-colors"
+                      >
+                        View All Rides
+                      </button>
+                    </div>
+                  )}
+                  
+                  {/* Show Fewer Button */}
+                  {showAllRides && Array.isArray(availableRides) && availableRides.length > 3 && (
+                    <div className="text-center mt-4">
+                      <button
+                        onClick={() => {
+                          setShowAllRides(false)
+                          loadAllRides()
+                        }}
+                        className="bg-gray-500 text-white px-6 py-2 rounded-lg font-medium hover:bg-gray-600 transition-colors"
+                      >
+                        Show Less
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Right Panel - Real World Map */}
+          <div className="flex-1 bg-gray-100 relative overflow-hidden">
+            {/* Map Container */}
+            <div className="absolute inset-0 z-0">
+              <MapContainer
+                center={mapCenter}
+                zoom={mapZoom}
+                style={{ height: '100%', width: '100%' }}
+                key={`${mapCenter[0]}-${mapCenter[1]}-${mapZoom}`}
+              >
+                <TileLayer
+                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                />
+                
+                {/* Map click handler */}
+                <MapClickHandler />
+                
+                {/* From marker */}
+                {fromCoords && (
+                  <Marker position={[fromCoords.lat, fromCoords.lng]} icon={greenIcon}>
+                    <Popup>
+                      <div>
+                        <strong>Pickup Location</strong><br />
+                        {searchFilters.from}
+                      </div>
+                    </Popup>
+                  </Marker>
+                )}
+                
+                {/* To marker */}
+                {toCoords && (
+                  <Marker position={[toCoords.lat, toCoords.lng]} icon={redIcon}>
+                    <Popup>
+                      <div>
+                        <strong>Dropoff Location</strong><br />
+                        {searchFilters.to}
+                      </div>
+                    </Popup>
+                  </Marker>
+                )}
+                
+                {/* Route line */}
+                {fromCoords && toCoords && (
+                  <Polyline
+                    positions={[
+                      [fromCoords.lat, fromCoords.lng],
+                      [toCoords.lat, toCoords.lng]
+                    ]}
+                    color="#EAB308"
+                    weight={4}
+                    opacity={0.8}
+                    dashArray="10,10"
+                  />
+                )}
+              </MapContainer>
+            </div>
+            
+            {/* Route info overlay */}
+            {searchFilters.from && searchFilters.to && (
+              <div className="absolute top-4 left-4 bg-white rounded-lg shadow-lg p-4 max-w-sm z-10">
+                <h4 className="font-medium mb-3 flex items-center gap-2">
+                  <Car className="h-4 w-4 text-yellow-500" />
+                  Route Overview
+                </h4>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-sm">
+                    <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                    <span className="flex-1 truncate">{searchFilters.from}</span>
+                  </div>
+                  <div className="ml-1.5 w-0.5 h-4 bg-gray-300"></div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                    <span className="flex-1 truncate">{searchFilters.to}</span>
+                  </div>
+                </div>
+                {fromCoords && toCoords && (
+                  <div className="mt-3 pt-3 border-t border-gray-100">
+                    <div className="flex justify-between text-xs text-gray-500">
+                      <span>Distance</span>
+                      <span>
+                        {Math.round(
+                          Math.sqrt(
+                            Math.pow(fromCoords.lat - toCoords.lat, 2) + 
+                            Math.pow(fromCoords.lng - toCoords.lng, 2)
+                          ) * 111 // Rough conversion to km
+                        )} km
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-xs text-gray-500 mt-1">
+                      <span>Est. Time</span>
+                      <span>30-45 min</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+            
+            {/* Central message when no locations */}
+            {!searchFilters.from && !searchFilters.to && (
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10 bg-black bg-opacity-20">
+                <div className="text-center text-white bg-black bg-opacity-50 p-6 rounded-lg">
+                  <MapPin className="h-16 w-16 mx-auto mb-4 text-white" />
+                  <h3 className="text-lg font-medium mb-2">Interactive World Map</h3>
+                  <p className="text-sm">Click anywhere on the map to set locations</p>
+                  <p className="text-xs mt-2 text-gray-300">or type in the search boxes on the left</p>
+                </div>
+              </div>
+            )}
+            
+            {/* Map controls */}
+            <div className="absolute top-4 right-4 flex flex-col gap-2 z-10">
+              <button 
+                onClick={() => {
+                  setMapCenter([22.5726, 88.3639])
+                  setMapZoom(12)
+                }}
+                className="bg-white p-2 rounded-lg shadow-md hover:shadow-lg transition-shadow"
+                title="Reset to Kolkata"
+              >
+                <RefreshCw className="h-4 w-4 text-gray-600" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Other Tabs Content (Full Width) */}
+      {activeTab !== 'search' && (
+        <div className="flex-1 overflow-y-auto">
+          <div className="max-w-7xl mx-auto px-6 py-8">
+            <div className="bg-white rounded-lg shadow-sm p-6">
+              {/* Tab Content for non-search tabs */}
+              {activeTab === 'bookings' && (
+                <div className="bg-yellow-200 rounded-lg p-6">
+                  <h3 className="text-xl font-semibold mb-6 text-gray-800">My Bookings</h3>
+                  
+                  {bookings.length === 0 ? (
+                    <div className="text-center py-12 text-gray-500 bg-white rounded-lg shadow-sm">
+                      <Calendar className="h-16 w-16 mx-auto mb-4 text-gray-300" />
+                      <h3 className="text-lg font-medium mb-2">No bookings yet</h3>
+                      <p>Start by searching for rides in the Search tab.</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {Array.isArray(bookings) && bookings.map((booking) => (
+                        <div key={booking.id} className="bg-yellow-100 border border-yellow-700 rounded-lg p-6 hover:shadow-lg transition-shadow shadow-sm">
+                          <div className="flex justify-between items-start mb-4">
+                            <div className="flex-1">
+                              <div className="flex items-center space-x-2 mb-2">
+                                <MapPin className="h-4 w-4 text-green-500" />
+                                <span className="font-medium">{booking.source || booking.ride?.source || 'N/A'}</span>
+                                <span className="text-gray-400">→</span>
+                                <MapPin className="h-4 w-4 text-red-500" />
+                                <span className="font-medium">{booking.destination || booking.ride?.destination || 'N/A'}</span>
+                              </div>
+                              <div className="flex items-center space-x-4 text-sm text-gray-600">
+                                <div className="flex items-center space-x-1">
+                                  <Calendar className="h-4 w-4" />
+                                  <span>{booking.departureDate ? new Date(booking.departureDate).toLocaleDateString() : 'N/A'}</span>
+                                </div>
+                                <div className="flex items-center space-x-1">
+                                  <Clock className="h-4 w-4" />
+                                  <span>{booking.departureDate ? new Date(booking.departureDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A'}</span>
+                                </div>
+                                <div className="flex items-center space-x-1">
+                                  <Users className="h-4 w-4" />
+                                  <span>{booking.seatsBooked} seats</span>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <div className="text-xl font-bold text-gray-900">₹{booking.totalAmount || booking.totalPrice || 0}</div>
+                              <div className="text-sm text-gray-500">Total amount</div>
+                            </div>
+                          </div>
+                          
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                booking.status === 'CONFIRMED' 
+                                  ? 'bg-green-100 text-green-800'
+                                  : booking.status === 'CANCELLED'
+                                  ? 'bg-red-100 text-red-800'
+                                  : booking.status === 'PAID'
+                                  ? 'bg-blue-100 text-blue-800'
+                                  : 'bg-yellow-100 text-yellow-800'
+                              }`}>
+                                {booking.status}
+                              </span>
+                              <span className="ml-2 text-sm text-gray-500">
+                                Booking ID: {booking.id}
+                              </span>
+                            </div>
+                            
+                            <div className="flex gap-2">
+                              {booking.status === 'CONFIRMED' && (
+                                <>
+                                  <button
+                                    onClick={() => setPaymentModal({ isOpen: true, booking: booking })}
+                                    className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+                                  >
+                                    Pay Now
+                                  </button>
+                                  <button
+                                    onClick={() => handleCancelBooking(booking.id)}
+                                    className="text-red-600 hover:text-red-800 text-sm font-medium"
+                                  >
+                                    Cancel
+                                  </button>
+                                </>
+                              )}
+                              
+                              {booking.status === 'PENDING' && (
+                                <div className="flex items-center gap-2">
+                                  <span className="text-sm text-gray-500">Waiting for driver confirmation...</span>
+                                  <button
+                                    onClick={() => handleCancelBooking(booking.id)}
+                                    className="text-red-600 hover:text-red-800 text-sm font-medium"
+                                  >
+                                    Cancel
+                                  </button>
+                                </div>
+                              )}
+                              
+                              {booking.status === 'PAID' && (
+                                <span className="text-sm text-green-600 font-medium">✓ Payment Complete</span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {activeTab === 'history' && (
+                <div className="bg-yellow-200 rounded-lg p-6">
+                  <h3 className="text-xl font-semibold mb-6 text-gray-800">Ride History</h3>
+                  
+                  {rideHistory.length === 0 ? (
+                    <div className="text-center py-12 text-gray-500 bg-white rounded-lg shadow-sm">
+                      <Clock className="h-16 w-16 mx-auto mb-4 text-gray-300" />
+                      <h3 className="text-lg font-medium mb-2">No completed rides yet</h3>
+                      <p>Your ride history will appear here after you complete trips.</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {Array.isArray(rideHistory) && rideHistory.map((ride, index) => (
+                        <div key={index} className="bg-yellow-100 border border-yellow-700 rounded-lg p-6 hover:shadow-lg transition-shadow shadow-sm">
+                          <div className="flex justify-between items-start mb-4">
+                            <div className="flex-1">
+                              <div className="flex items-center space-x-2 mb-2">
+                                <MapPin className="h-4 w-4 text-green-500" />
+                                <span className="font-medium">{ride.source}</span>
+                                <span className="text-gray-400">→</span>
+                                <MapPin className="h-4 w-4 text-red-500" />
+                                <span className="font-medium">{ride.destination}</span>
+                              </div>
+                              <div className="flex items-center space-x-4 text-sm text-gray-600">
+                                <div className="flex items-center space-x-1">
+                                  <Calendar className="h-4 w-4" />
+                                  <span>{new Date(ride.departureTime).toLocaleDateString()}</span>
+                                </div>
+                                <div className="flex items-center space-x-1">
+                                  <Clock className="h-4 w-4" />
+                                  <span>{new Date(ride.departureTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <div className="text-xl font-bold text-gray-900">₹{ride.pricePerSeat}</div>
+                              <div className="text-sm text-gray-500">Completed</div>
+                            </div>
+                          </div>
+                          
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-3">
+                              <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center">
+                                <span className="text-sm font-medium">{ride.driver?.firstName?.[0]}</span>
+                              </div>
+                              <div>
+                                <p className="font-medium">{ride.driver?.firstName} {ride.driver?.lastName}</p>
+                                <p className="text-sm text-gray-500">Driver</p>
+                              </div>
+                            </div>
+                            
+                            <div className="flex items-center space-x-2">
+                              <Star className="h-4 w-4 text-yellow-400 fill-current" />
+                              <span className="text-sm text-gray-600">5.0</span>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {activeTab === 'payments' && (
+                <div className="bg-yellow-200 rounded-lg p-6">
+                  <h3 className="text-xl font-semibold mb-6">Payment History</h3>
+                  <PaymentHistory user={user} userType="passenger" />
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Payment Modal */}
+      <PaymentModal
+        isOpen={paymentModal.isOpen}
+        onClose={closePaymentModal}
+        booking={paymentModal.booking}
+        onPaymentSuccess={handlePaymentSuccess}
+      />
     </div>
   )
 }

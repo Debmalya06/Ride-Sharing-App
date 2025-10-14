@@ -24,15 +24,20 @@ public class TwilioConfig {
         System.out.println("AuthToken present: " + (authToken != null && !authToken.isEmpty()));
         System.out.println("FromNumber: " + fromNumber);
         
-        if (accountSid != null && authToken != null && !accountSid.isEmpty() && !authToken.isEmpty()) {
-            Twilio.init(accountSid, authToken);
-            System.out.println("Twilio initialized successfully!");
-            return "Twilio initialized successfully";
-        } else {
-            System.err.println("Twilio not initialized - missing credentials");
-            System.err.println("AccountSid: " + accountSid);
-            System.err.println("AuthToken: " + (authToken != null ? "present" : "null"));
-            return "Twilio not initialized - missing credentials";
+        try {
+            if (accountSid != null && authToken != null && !accountSid.isEmpty() && !authToken.isEmpty()) {
+                Twilio.init(accountSid, authToken);
+                System.out.println("Twilio initialized successfully!");
+                return "Twilio initialized successfully";
+            } else {
+                System.err.println("Twilio not initialized - missing credentials (will continue without SMS)");
+                System.err.println("AccountSid: " + accountSid);
+                System.err.println("AuthToken: " + (authToken != null ? "present" : "null"));
+                return "Twilio not initialized - missing credentials";
+            }
+        } catch (Exception e) {
+            System.err.println("Twilio initialization failed: " + e.getMessage());
+            return "Twilio initialization failed: " + e.getMessage();
         }
     }
 

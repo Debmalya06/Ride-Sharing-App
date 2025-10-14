@@ -120,8 +120,21 @@ const LoginPage = ({ onLogin }) => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-yellow-50 to-orange-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
+    <div className="min-h-screen relative flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+      {/* Background Image with Overlay */}
+      <div className="absolute inset-0 z-0">
+        <div 
+          className="w-full h-full bg-cover bg-center bg-no-repeat"
+          style={{
+            backgroundImage: `url('/yellow-taxi-cab-on-city-street-with-passengers.jpg')`
+          }}
+        ></div>
+        {/* Overlay for opacity control */}
+        <div className="absolute inset-0 bg-yellow-50 bg-opacity-85"></div>
+      </div>
+      
+      {/* Content */}
+      <div className="max-w-md w-full space-y-8 relative z-10">
         <div className="text-center">
           <Link to="/" className="flex items-center justify-center space-x-2 mb-4">
             <div className="bg-yellow-500 p-3 rounded-lg">
@@ -252,11 +265,11 @@ const LoginPage = ({ onLogin }) => {
         </div>
 
         {/* Demo Credentials */}
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
+        {/* <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
           <p className="text-sm text-blue-700 font-medium mb-2">Test Credentials:</p>
           <p className="text-xs text-blue-600">Try: 7439033371 / test123</p>
           <p className="text-xs text-gray-500 mt-1">Make sure your backend is running on localhost:8080</p>
-        </div>
+        </div> */}
       </div>
     </div>
   )

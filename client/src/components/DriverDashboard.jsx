@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Car, Plus, MapPin, Clock, Users, IndianRupee, Calendar, Eye } from 'lucide-react'
 import apiService from '../services/api'
+import DriverWallet from './DriverWallet'
 
 const DriverDashboard = ({ user }) => {
   const [activeTab, setActiveTab] = useState('overview')
@@ -17,6 +18,8 @@ const DriverDashboard = ({ user }) => {
     price: '',
     notes: ''
   })
+  const [fareCalculation, setFareCalculation] = useState(null)
+  const [calculatingFare, setCalculatingFare] = useState(false)
 
   useEffect(() => {
     fetchData()
@@ -79,6 +82,36 @@ const DriverDashboard = ({ user }) => {
       ...postRideForm,
       [e.target.name]: e.target.value
     })
+  }
+
+  // Function to calculate fare based on distance
+  const calculateFare = async () => {
+    if (!postRideForm.from || !postRideForm.to) {
+      setError('Please enter both source and destination to calculate fare')
+      return
+    }
+
+    setCalculatingFare(true)
+    setError('')
+    
+    try {
+      const response = await apiService.calculateFare(postRideForm.from, postRideForm.to)
+      
+      if (response.status === 'SUCCESS') {
+        setFareCalculation(response.data)
+        // Auto-fill the calculated fare in the price field
+        setPostRideForm({
+          ...postRideForm,
+          price: response.data.calculatedFare.toString()
+        })
+      } else {
+        setError('Failed to calculate fare: ' + response.message)
+      }
+    } catch (err) {
+      setError('Error calculating fare: ' + err.message)
+    } finally {
+      setCalculatingFare(false)
+    }
   }
 
   // Ride management functions
@@ -232,6 +265,16 @@ const DriverDashboard = ({ user }) => {
               >
                 Bookings
               </button>
+              <button
+                onClick={() => setActiveTab('wallet')}
+                className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === 'wallet'
+                    ? 'border-yellow-500 text-yellow-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                💳 Wallet
+              </button>
             </nav>
           </div>
 
@@ -307,6 +350,48 @@ const DriverDashboard = ({ user }) => {
                       />
                     </div>
                   </div>
+                  
+                  {/* Dynamic Fare Calculation Section */}
+                  <div className="md:col-span-2">
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="text-sm font-medium text-blue-900">🚗 Dynamic Fare Calculator</h4>
+                        <button
+                          type="button"
+                          onClick={calculateFare}
+                          disabled={calculatingFare || !postRideForm.from || !postRideForm.to}
+                          className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                        >
+                          {calculatingFare ? 'Calculating...' : 'Calculate Fare'}
+                        </button>
+                      </div>
+                      
+                      {fareCalculation && (
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                          <div className="bg-white rounded-lg p-3 border border-blue-100">
+                            <p className="text-blue-600 font-medium">Distance</p>
+                            <p className="text-gray-900 font-semibold">{fareCalculation.distanceText}</p>
+                          </div>
+                          <div className="bg-white rounded-lg p-3 border border-blue-100">
+                            <p className="text-blue-600 font-medium">Duration</p>
+                            <p className="text-gray-900 font-semibold">{fareCalculation.durationText}</p>
+                          </div>
+                          <div className="bg-white rounded-lg p-3 border border-blue-100">
+                            <p className="text-blue-600 font-medium">Calculated Fare</p>
+                            <p className="text-green-600 font-bold text-lg">₹{fareCalculation.calculatedFare}</p>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {!fareCalculation && (
+                        <p className="text-blue-700 text-sm">
+                          💡 <strong>FREE Smart Pricing:</strong> Our system calculates fare based on actual distance.
+                          Formula: Base Fare (₹50) + Distance × Rate per KM (₹3/km).
+                          Max cost:₹5000 Only.
+                        </p>
+                      )}
+                    </div>
+                  </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Date</label>
                     <input
@@ -348,7 +433,10 @@ const DriverDashboard = ({ user }) => {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Price per Seat</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Price per Seat 
+                      {fareCalculation && <span className="text-green-600 text-xs ml-2">(Auto-calculated)</span>}
+                    </label>
                     <div className="relative">
                       <IndianRupee className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
                       <input
@@ -362,6 +450,11 @@ const DriverDashboard = ({ user }) => {
                         placeholder="0"
                       />
                     </div>
+                    {fareCalculation && (
+                      <p className="text-xs text-gray-500 mt-1">
+                        Calculated based on {fareCalculation.distanceKm?.toFixed(1)} km distance
+                      </p>
+                    )}
                   </div>
                   <div className="md:col-span-2">
                     <label className="block text-sm font-medium text-gray-700 mb-2">Additional Notes</label>
@@ -592,6 +685,11 @@ const DriverDashboard = ({ user }) => {
                   </div>
                 )}
               </div>
+            )}
+
+            {/* Wallet Tab */}
+            {activeTab === 'wallet' && (
+              <DriverWallet driverId={user.id} />
             )}
           </div>
         </div>
