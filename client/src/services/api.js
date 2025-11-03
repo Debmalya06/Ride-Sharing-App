@@ -178,12 +178,14 @@ class ApiService {
     })
   }
 
-  async getAllUsers() {
-    return this.apiCall('/users/all')
-  }
+  // Note: getAllUsers is moved to admin section - use adminGetAllUsers for admin dashboard
 
   async deleteUser(userId) {
-    return this.apiCall(`/users/${userId}`, {
+    console.log('API deleteUser called with userId:', userId)
+    const endpoint = `/admin/users/${userId}`
+    console.log('DELETE request to endpoint:', endpoint)
+    
+    return this.apiCall(endpoint, {
       method: 'DELETE'
     })
   }
@@ -209,20 +211,78 @@ class ApiService {
 
   // Ride endpoints
   async postRide(rideData) {
-    // Combine date and time into LocalDateTime format
-    const departureDateTime = `${rideData.date}T${rideData.time}:00`
-    
-    return this.apiCall('/rides', {
-      method: 'POST',
-      body: JSON.stringify({
-        source: rideData.from,
-        destination: rideData.to,
-        departureDate: departureDateTime,
-        availableSeats: parseInt(rideData.seats),
-        pricePerSeat: parseFloat(rideData.price),
-        notes: rideData.notes || ''
+    try {
+      // Validate required fields before sending
+      if (!rideData.from?.trim()) {
+        throw new Error('Source location is required')
+      }
+      if (!rideData.to?.trim()) {
+        throw new Error('Destination location is required')
+      }
+      if (!rideData.date) {
+        throw new Error('Departure date is required')
+      }
+      if (!rideData.time) {
+        throw new Error('Departure time is required')
+      }
+      if (!rideData.seats || parseInt(rideData.seats) < 1) {
+        throw new Error('Available seats must be at least 1')
+      }
+      if (!rideData.price || parseFloat(rideData.price) <= 0) {
+        throw new Error('Price per seat must be greater than 0')
+      }
+
+      // Validate data ranges to match backend constraints
+      const seats = parseInt(rideData.seats)
+      if (seats < 1 || seats > 8) {
+        throw new Error('Available seats must be between 1 and 8')
+      }
+
+      const price = parseFloat(rideData.price)
+      if (price <= 0 || price > 10000) {
+        throw new Error('Price per seat must be between ₹1 and ₹10,000')
+      }
+
+      // Validate string lengths to match backend constraints
+      if (rideData.from.trim().length > 100) {
+        throw new Error('Source location must not exceed 100 characters')
+      }
+      if (rideData.to.trim().length > 100) {
+        throw new Error('Destination location must not exceed 100 characters')
+      }
+      if (rideData.notes && rideData.notes.length > 500) {
+        throw new Error('Notes must not exceed 500 characters')
+      }
+
+      // Combine date and time into LocalDateTime format
+      const departureDateTime = `${rideData.date}T${rideData.time}:00`
+      
+      // Validate that the date is in the future
+      const departureDate = new Date(departureDateTime)
+      const now = new Date()
+      if (departureDate <= now) {
+        throw new Error('Departure date and time must be in the future')
+      }
+      
+      return this.apiCall('/rides', {
+        method: 'POST',
+        body: JSON.stringify({
+          source: rideData.from.trim(),
+          destination: rideData.to.trim(),
+          departureDate: departureDateTime,
+          availableSeats: seats,
+          pricePerSeat: price,
+          notes: rideData.notes?.trim() || ''
+        })
       })
-    })
+    } catch (error) {
+      // Re-throw validation errors as they are
+      if (error.message) {
+        throw error
+      }
+      // Handle API call errors
+      throw new Error('Failed to post ride')
+    }
   }
 
   async getMyRides() {
@@ -389,6 +449,11 @@ class ApiService {
     return this.apiCall('/admin/drivers')
   }
 
+  // Get all drivers with ratings for admin
+  async getAllDriversWithRatings() {
+    return this.apiCall('/admin/drivers-with-ratings')
+  }
+
   // Verify driver details
   async verifyDriver(driverDetailId, verified) {
     return this.apiCall(`/driver/verify/${driverDetailId}?verified=${verified}`, {
@@ -406,12 +471,7 @@ class ApiService {
     return this.apiCall(`/admin/users/${userId}`)
   }
 
-  // Admin: Delete user
-  async deleteUser(userId) {
-    return this.apiCall(`/admin/users/${userId}`, {
-      method: 'DELETE'
-    })
-  }
+  // Admin: Delete user (using main deleteUser method above)
 
   // Admin: Verify driver (alternative endpoint from Postman)
   async adminVerifyDriver(driverDetailId) {
@@ -496,6 +556,84 @@ class ApiService {
   // Get passenger total spending
   async getPassengerTotalSpending(passengerId) {
     return this.apiCall(`/payments/spending/${passengerId}`)
+  }
+
+  // RATING APIs
+  // Create a new rating (Passenger to Driver)
+  async createRating(passengerId, ratingData) {
+    return this.apiCall(`/ratings/passenger/${passengerId}`, {
+      method: 'POST',
+      body: JSON.stringify(ratingData)
+    })
+  }
+
+  // Get all ratings for a driver
+  async getDriverRatings(driverId) {
+    return this.apiCall(`/ratings/driver/${driverId}`)
+  }
+
+  // Get all ratings by a passenger
+  async getPassengerRatings(passengerId) {
+    return this.apiCall(`/ratings/passenger/${passengerId}`)
+  }
+
+  // Get driver rating summary
+  async getDriverRatingSummary(driverId) {
+    return this.apiCall(`/ratings/driver/${driverId}/summary`)
+  }
+
+  // Get paginated ratings for a driver
+  async getPaginatedDriverRatings(driverId, page = 0, size = 10) {
+    return this.apiCall(`/ratings/driver/${driverId}/paginated?page=${page}&size=${size}`)
+  }
+
+  // Get ratings with comments for a driver
+  async getDriverRatingsWithComments(driverId) {
+    return this.apiCall(`/ratings/driver/${driverId}/comments`)
+  }
+
+  // Get a specific rating by ID
+  async getRatingById(ratingId) {
+    return this.apiCall(`/ratings/${ratingId}`)
+  }
+
+  // Update a rating
+  async updateRating(ratingId, ratingData) {
+    return this.apiCall(`/ratings/${ratingId}`, {
+      method: 'PUT',
+      body: JSON.stringify(ratingData)
+    })
+  }
+
+  // Delete a rating (Admin only)
+  async deleteRating(ratingId) {
+    return this.apiCall(`/ratings/${ratingId}`, {
+      method: 'DELETE'
+    })
+  }
+
+  // Get all ratings (Admin only)
+  async getAllRatings(page = 0, size = 10) {
+    return this.apiCall(`/ratings/admin/all?page=${page}&size=${size}`)
+  }
+
+  // USER PROFILE APIs
+  // Get user profile
+  async getUserProfile() {
+    return this.apiCall('/users/profile')
+  }
+
+  // Update user profile
+  async updateUserProfile(profileData) {
+    return this.apiCall('/users/profile', {
+      method: 'PUT',
+      body: JSON.stringify(profileData)
+    })
+  }
+
+  // Get user by ID (Admin only)
+  async getUserById(userId) {
+    return this.apiCall(`/users/${userId}`)
   }
 }
 

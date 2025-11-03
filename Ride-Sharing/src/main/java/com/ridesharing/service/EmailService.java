@@ -161,6 +161,20 @@ public class EmailService {
         }
     }
 
+    public void sendRideReminderEmail(String to, String subject, Map<String, Object> templateModel) {
+        try {
+            // Add current year and support email if not present
+            templateModel.putIfAbsent("currentYear", java.time.Year.now().getValue());
+            templateModel.putIfAbsent("supportEmail", supportEmail);
+            
+            sendTemplateEmail(to, subject, "ride-reminder", templateModel);
+            log.info("Ride reminder email sent to: {}", to);
+        } catch (Exception e) {
+            log.error("Failed to send ride reminder email to: {}", to, e);
+            throw new RuntimeException("Failed to send ride reminder email", e);
+        }
+    }
+
     public void sendSimpleEmail(String to, String subject, String text) {
         try {
             MimeMessage message = emailSender.createMimeMessage();

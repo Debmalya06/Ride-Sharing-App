@@ -45,8 +45,8 @@ public class DriverDetail {
     @Column(name = "insurance_expiry")
     private LocalDateTime insuranceExpiry;
 
-    @Column(name = "is_verified", nullable = false)
-    private Boolean isVerified = false;
+    @Column(name = "is_verified")
+    private Boolean isVerified;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

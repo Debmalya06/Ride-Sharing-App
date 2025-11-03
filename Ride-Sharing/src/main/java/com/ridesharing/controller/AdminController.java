@@ -63,6 +63,17 @@ public class AdminController {
         }
     }
 
+    @GetMapping("/drivers-with-ratings")
+    public ResponseEntity<ApiResponse> getAllDriversWithRatings() {
+        try {
+            ApiResponse response = adminService.getAllDriversWithRatings();
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest()
+                    .body(new ApiResponse("ERROR", e.getMessage(), null));
+        }
+    }
+
     @GetMapping("/drivers/pending")
     public ResponseEntity<ApiResponse> getPendingDriverDetails() {
         try {

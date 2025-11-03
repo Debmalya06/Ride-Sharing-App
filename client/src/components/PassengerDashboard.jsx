@@ -6,6 +6,9 @@ import 'leaflet/dist/leaflet.css'
 import apiService from '../services/api'
 import PaymentModal from './PaymentModal'
 import PaymentHistory from './PaymentHistory'
+import Loader from './Loader'
+import { toast, ToastContainer } from 'react-toastify'
+import 'react-toastify/dist/ReactToastify.css'
 
 // Fix for default markers in react-leaflet
 delete L.Icon.Default.prototype._getIconUrl
@@ -28,8 +31,39 @@ const createCustomIcon = (color) => {
 const greenIcon = createCustomIcon('#22c55e')
 const redIcon = createCustomIcon('#ef4444')
 
+// Utility function to format date and time
+const formatDateTime = (dateTimeString) => {
+  if (!dateTimeString) return { date: 'No date', time: 'No time' }
+  
+  try {
+    const date = new Date(dateTimeString)
+    if (isNaN(date.getTime())) {
+      console.warn('Invalid date string:', dateTimeString)
+      return { date: 'Invalid date', time: 'Invalid time' }
+    }
+    
+    const formattedDate = date.toLocaleDateString('en-IN', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric'
+    })
+    
+    const formattedTime = date.toLocaleTimeString('en-IN', { 
+      hour: '2-digit', 
+      minute: '2-digit',
+      hour12: true
+    })
+    
+    return { date: formattedDate, time: formattedTime }
+  } catch (error) {
+    console.error('Error formatting date:', error, 'for value:', dateTimeString)
+    return { date: 'Format error', time: 'Format error' }
+  }
+}
+
 const PassengerDashboard = ({ user }) => {
   const [activeTab, setActiveTab] = useState('search')
+  const [isDashboardLoading, setIsDashboardLoading] = useState(true)
   const [searchFilters, setSearchFilters] = useState({
     from: '',
     to: '',
@@ -43,6 +77,13 @@ const PassengerDashboard = ({ user }) => {
   const [searchPerformed, setSearchPerformed] = useState(false)
   const [error, setError] = useState('')
   const [selectedSeats, setSelectedSeats] = useState({}) // Track selected seats for each ride
+  
+  // Tab-specific loading states
+  const [searchLoading, setSearchLoading] = useState(false)
+  const [bookingsLoading, setBookingsLoading] = useState(false)
+  const [historyLoading, setHistoryLoading] = useState(false)
+  const [paymentsLoading, setPaymentsLoading] = useState(false)
+  const [profileLoading, setProfileLoading] = useState(false)
   
   // Map and Location state
   const [showFromSuggestions, setShowFromSuggestions] = useState(false)
@@ -86,6 +127,17 @@ const PassengerDashboard = ({ user }) => {
     isOpen: false,
     booking: null
   })
+
+  // Profile State
+  const [profileData, setProfileData] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    phoneNumber: '',
+    dateOfBirth: '',
+    address: ''
+  })
+  const [isEditingProfile, setIsEditingProfile] = useState(false)
 
   // Enhanced geocoding function with multiple services and fallbacks
   const geocodeLocation = async (locationName) => {
@@ -220,6 +272,17 @@ const PassengerDashboard = ({ user }) => {
     return null
   }
 
+  // Initial dashboard loading
+  useEffect(() => {
+    const initializeDashboard = async () => {
+      // Simulate initial loading time
+      await new Promise(resolve => setTimeout(resolve, 2000))
+      setIsDashboardLoading(false)
+    }
+    
+    initializeDashboard()
+  }, [])
+
   // Update coordinates when locations change
   useEffect(() => {
     if (searchFilters.from) {
@@ -274,16 +337,131 @@ const PassengerDashboard = ({ user }) => {
   }, [searchFilters.to, fromCoords])
 
   useEffect(() => {
-    fetchBookings()
-    loadAllRides()
+    // Welcome toast for successful login (only after initial dashboard loading)
+    if (!isDashboardLoading) {
+      toast.success(`🎉 Welcome back, ${user?.firstName || 'User'}! Ready for your next ride?`, {
+        position: "top-right",
+        autoClose: 4000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      })
+    }
     
     // Add debugging to see what happens on load
     console.log('PassengerDashboard mounted, availableRides:', availableRides)
-  }, [])
+    
+    // Load initial rides data for search tab
+    if (!isDashboardLoading) {
+      loadAllRides()
+    }
+  }, [isDashboardLoading])
 
-  const fetchBookings = async () => {
+  // Handle tab switching - no more full page loading
+  const handleTabSwitch = async (newTab) => {
+    if (newTab === activeTab) return // Don't switch if already on the same tab
+    
+    setActiveTab(newTab)
+    
+    // Show tab switch notification
+    toast.info(`Switched to ${newTab.charAt(0).toUpperCase() + newTab.slice(1)} tab`, {
+      position: "bottom-right",
+      autoClose: 2000,
+      hideProgressBar: true,
+      closeOnClick: true,
+      pauseOnHover: false,
+      draggable: true,
+    })
+
+    // Load data for the new tab with loading states
     try {
-      setLoading(true)
+      switch (newTab) {
+        case 'search':
+          console.log('Loading search tab...')
+          setSearchLoading(true)
+          await new Promise(resolve => setTimeout(resolve, 2000))
+          // Load all available rides for search tab
+          await loadAllRides()
+          setSearchLoading(false)
+          console.log('Search loading completed')
+          break
+        case 'bookings':
+          console.log('Loading bookings tab...')
+          setBookingsLoading(true)
+          // Force a render cycle before fetching data
+          await new Promise(resolve => {
+            requestAnimationFrame(() => {
+              setTimeout(resolve, 300)
+            })
+          })
+          const bookingsStartTime = Date.now()
+          await fetchBookings(false)
+          const bookingsElapsed = Date.now() - bookingsStartTime
+          const bookingsRemainingTime = Math.max(0, 2000 - bookingsElapsed)
+          await new Promise(resolve => setTimeout(resolve, bookingsRemainingTime))
+          setBookingsLoading(false)
+          console.log('Bookings loading completed')
+          break
+        case 'history':
+          console.log('Loading history tab...')
+          setHistoryLoading(true)
+          // Force a render cycle before fetching data
+          await new Promise(resolve => {
+            requestAnimationFrame(() => {
+              setTimeout(resolve, 300)
+            })
+          })
+          const historyStartTime = Date.now()
+          await fetchBookings(false) // This populates both bookings and history
+          const historyElapsed = Date.now() - historyStartTime
+          const historyRemainingTime = Math.max(0, 2000 - historyElapsed)
+          await new Promise(resolve => setTimeout(resolve, historyRemainingTime))
+          setHistoryLoading(false)
+          console.log('History loading completed')
+          break
+        case 'payments':
+          console.log('Loading payments tab...')
+          setPaymentsLoading(true)
+          await new Promise(resolve => setTimeout(resolve, 2000))
+          setPaymentsLoading(false)
+          console.log('Payments loading completed')
+          break
+        case 'profile':
+          console.log('Loading profile tab...')
+          setProfileLoading(true)
+          // Force a render cycle before fetching data
+          await new Promise(resolve => {
+            requestAnimationFrame(() => {
+              setTimeout(resolve, 300)
+            })
+          })
+          const profileStartTime = Date.now()
+          await fetchUserProfile(false)
+          const profileElapsed = Date.now() - profileStartTime
+          const profileRemainingTime = Math.max(0, 2000 - profileElapsed)
+          await new Promise(resolve => setTimeout(resolve, profileRemainingTime))
+          setProfileLoading(false)
+          console.log('Profile loading completed')
+          break
+      }
+    } catch (error) {
+      console.error('Error loading tab data:', error)
+      // Reset all loading states on error
+      setSearchLoading(false)
+      setBookingsLoading(false)
+      setHistoryLoading(false)
+      setPaymentsLoading(false)
+      setProfileLoading(false)
+      setError('Failed to load data. Please try again.')
+    }
+  }
+
+  const fetchBookings = async (handleOwnLoading = true) => {
+    try {
+      if (handleOwnLoading) {
+        setLoading(true)
+      }
       setError('')
       
       const response = await apiService.getMyBookings()
@@ -314,7 +492,9 @@ const PassengerDashboard = ({ user }) => {
       setBookings([])
       setRideHistory([])
     } finally {
-      setLoading(false)
+      if (handleOwnLoading) {
+        setLoading(false)
+      }
     }
   }
 
@@ -340,6 +520,17 @@ const PassengerDashboard = ({ user }) => {
         setAvailableRides(showAllRides ? ridesData : ridesData.slice(0, 3)) // Show only 3 most recent rides by default, or all if requested
         setSearchPerformed(true) // Set this to true so rides show on initial load
         console.log('✅ Set availableRides to:', ridesData.slice(0, 5))
+        
+        // Debug: Log the structure of the first ride to see date fields
+        if (ridesData.length > 0) {
+          console.log('🔍 First ride structure:', ridesData[0])
+          console.log('🔍 Date fields in first ride:', {
+            departureDate: ridesData[0].departureDate,
+            departureTime: ridesData[0].departureTime,
+            createdAt: ridesData[0].createdAt,
+            updatedAt: ridesData[0].updatedAt
+          })
+        }
       } else {
         console.log('❌ Load rides failed or no data')
         setAvailableRides([])
@@ -390,7 +581,14 @@ const PassengerDashboard = ({ user }) => {
     e.preventDefault()
     
     if (!searchFilters.from || !searchFilters.to) {
-      setError('Please enter both pickup and drop-off locations.')
+      toast.warning('📍 Please enter both pickup and drop-off locations.', {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      })
       return
     }
 
@@ -454,22 +652,43 @@ const PassengerDashboard = ({ user }) => {
       
       if (response && response.status === 'SUCCESS' && response.data) {
         // Show success message and refresh bookings
-        alert('Booking created successfully! Please check your booking history. Payment will be available after driver confirmation.')
+        toast.success('🎉 Booking created successfully! Please check your booking history. Payment will be available after driver confirmation.', {
+          position: "top-right",
+          autoClose: 5000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+        })
         
         // Refresh the bookings list to show the new booking
         await fetchBookings()
         
         // Switch to bookings tab to show the new booking
-        setActiveTab('bookings')
+        handleTabSwitch('bookings')
         
         // Clear any previous errors
         setError('')
       } else {
-        setError('Failed to create booking. Please try again.')
+        toast.error('❌ Failed to create booking. Please try again.', {
+          position: "top-right",
+          autoClose: 4000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+        })
       }
     } catch (error) {
       console.error('Error creating booking:', error)
-      setError('Failed to book ride. Please try again.')
+      toast.error('❌ Failed to book ride. Please try again.', {
+        position: "top-right",
+        autoClose: 4000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      })
     }
   }
 
@@ -484,13 +703,34 @@ const PassengerDashboard = ({ user }) => {
       
       if (response && response.status === 'SUCCESS') {
         await fetchBookings() // Refresh bookings
-        alert('Booking cancelled successfully!')
+        toast.success('✅ Booking cancelled successfully!', {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+        })
       } else {
-        alert('Failed to cancel booking. Please try again.')
+        toast.error('❌ Failed to cancel booking. Please try again.', {
+          position: "top-right",
+          autoClose: 4000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+        })
       }
     } catch (error) {
       console.error('Error cancelling booking:', error)
-      alert('Failed to cancel booking. Please try again.')
+      toast.error('❌ Failed to cancel booking. Please try again.', {
+        position: "top-right",
+        autoClose: 4000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      })
     } finally {
       setLoading(false)
     }
@@ -507,7 +747,81 @@ const PassengerDashboard = ({ user }) => {
     console.log('Payment successful:', paymentResult)
     closePaymentModal()
     fetchBookings() // Refresh bookings after successful payment
-    alert('Payment successful! Your ride is confirmed.')
+    toast.success('💳 Payment successful! Your ride is confirmed.', {
+      position: "top-right",
+      autoClose: 5000,
+      hideProgressBar: false,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true,
+    })
+  }
+
+  // Profile functions
+  const fetchUserProfile = async (handleOwnLoading = true) => {
+    try {
+      if (handleOwnLoading) {
+        setProfileLoading(true)
+      }
+      setError('')
+      
+      const response = await apiService.getUserProfile()
+      console.log('Profile response:', response)
+      
+      if (response && response.data) {
+        setProfileData({
+          firstName: response.data.firstName || '',
+          lastName: response.data.lastName || '',
+          email: response.data.email || '',
+          phoneNumber: response.data.phoneNumber || '',
+          dateOfBirth: response.data.dateOfBirth || '',
+          address: response.data.address || ''
+        })
+      }
+    } catch (error) {
+      console.error('Error fetching profile:', error)
+      setError('Failed to load profile. Please try again.')
+    } finally {
+      if (handleOwnLoading) {
+        setProfileLoading(false)
+      }
+    }
+  }
+
+  const handleProfileUpdate = async (e) => {
+    e.preventDefault()
+    
+    try {
+      setProfileLoading(true)
+      setError('')
+      
+      const response = await apiService.updateUserProfile(profileData)
+      console.log('Profile update response:', response)
+      
+      if (response && response.status === 'SUCCESS') {
+        toast.success('✅ Profile updated successfully!', {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+        })
+        setIsEditingProfile(false)
+      }
+    } catch (error) {
+      console.error('Error updating profile:', error)
+      setError('Failed to update profile. Please try again.')
+    } finally {
+      setProfileLoading(false)
+    }
+  }
+
+  const handleProfileInputChange = (field, value) => {
+    setProfileData(prev => ({
+      ...prev,
+      [field]: value
+    }))
   }
 
   // Location suggestion handlers
@@ -542,6 +856,31 @@ const PassengerDashboard = ({ user }) => {
 
   return (
     <div className="h-screen bg-gray-50 flex flex-col">
+      {/* Initial Dashboard Loading */}
+      {isDashboardLoading && (
+        <div className="fixed inset-0 bg-white bg-opacity-98 flex flex-col items-center justify-center z-50">
+          <Loader 
+            size={250}
+            showText={true}
+            text="Setting up your dashboard..."
+            className="mb-8"
+          />
+          <div className="text-center max-w-lg mx-auto px-4">
+            <h3 className="text-2xl font-bold text-gray-900 mb-4">
+              Welcome to Your Passenger Hub! 🚗
+            </h3>
+            <p className="text-lg text-gray-600 mb-2">
+              Preparing your personalized ride experience...
+            </p>
+            <div className="flex justify-center items-center space-x-2 mt-6">
+              <div className="w-2 h-2 bg-yellow-500 rounded-full animate-bounce"></div>
+              <div className="w-2 h-2 bg-yellow-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+              <div className="w-2 h-2 bg-yellow-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="bg-white shadow-sm px-6 py-4">
         <div className="flex justify-between items-center">
@@ -553,7 +892,7 @@ const PassengerDashboard = ({ user }) => {
           {/* Tab Navigation - Horizontal */}
           <div className="flex space-x-1 bg-yellow-500  rounded-lg p-1">
             <button
-              onClick={() => setActiveTab('search')}
+              onClick={() => handleTabSwitch('search')}
               className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                 activeTab === 'search' 
                   ? 'bg-white text-gray-900 shadow-sm' 
@@ -563,7 +902,7 @@ const PassengerDashboard = ({ user }) => {
               Search Rides
             </button>
             <button
-              onClick={() => setActiveTab('bookings')}
+              onClick={() => handleTabSwitch('bookings')}
               className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                 activeTab === 'bookings' 
                   ? 'bg-white text-gray-900 shadow-sm' 
@@ -573,7 +912,7 @@ const PassengerDashboard = ({ user }) => {
               My Bookings ({bookings.length})
             </button>
             <button
-              onClick={() => setActiveTab('history')}
+              onClick={() => handleTabSwitch('history')}
               className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                 activeTab === 'history' 
                   ? 'bg-white text-gray-900 shadow-sm' 
@@ -583,7 +922,7 @@ const PassengerDashboard = ({ user }) => {
               Ride History ({rideHistory.length})
             </button>
             <button
-              onClick={() => setActiveTab('payments')}
+              onClick={() => handleTabSwitch('payments')}
               className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                 activeTab === 'payments' 
                   ? 'bg-white text-gray-900 shadow-sm' 
@@ -592,13 +931,44 @@ const PassengerDashboard = ({ user }) => {
             >
               Payment History
             </button>
+            <button
+              onClick={() => handleTabSwitch('profile')}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                activeTab === 'profile' 
+                  ? 'bg-white text-gray-900 shadow-sm' 
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              My Profile
+            </button>
           </div>
         </div>
       </div>
 
+      {/* Loading Overlay */}
       {/* Main Content - Two Column Layout for Search Tab */}
       {activeTab === 'search' && (
-        <div className="flex-1 flex">
+        <div className="flex-1 flex relative">
+          {/* Search Loading Overlay */}
+          {searchLoading && (
+            <div className="absolute inset-0 bg-white flex flex-col items-center justify-center z-50 rounded-lg">
+              <Loader 
+                size={250}
+                showText={true}
+                text="Loading ride search..."
+                className="mb-4"
+              />
+              <div className="text-center">
+                <h4 className="text-lg font-medium text-gray-900 mb-2">
+                  Preparing Search Interface
+                </h4>
+                <p className="text-sm text-gray-600">
+                  Setting up your personalized ride search experience...
+                </p>
+              </div>
+            </div>
+          )}
+          
           {/* Left Panel - Search Form */}
           <div className="w-2/5 bg-white border-r border-gray-200 overflow-y-auto">
             <div className="p-6">
@@ -769,11 +1139,27 @@ const PassengerDashboard = ({ user }) => {
                             <div className="flex items-center gap-4 text-sm text-gray-600 mb-3">
                               <div className="flex items-center gap-1">
                                 <Calendar className="h-4 w-4 flex-shrink-0" />
-                                <span>{ride.departureTime ? new Date(ride.departureTime).toLocaleDateString() : 'No date'}</span>
+                                <span>
+                                  {(ride.departureDate || ride.departureTime) ? 
+                                    new Date(ride.departureDate || ride.departureTime).toLocaleDateString('en-IN', {
+                                      day: '2-digit',
+                                      month: 'short',
+                                      year: 'numeric'
+                                    }) : 'No date'
+                                  }
+                                </span>
                               </div>
                               <div className="flex items-center gap-1">
                                 <Clock className="h-4 w-4 flex-shrink-0" />
-                                <span>{ride.departureTime ? new Date(ride.departureTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'No time'}</span>
+                                <span>
+                                  {(ride.departureDate || ride.departureTime) ? 
+                                    new Date(ride.departureDate || ride.departureTime).toLocaleTimeString('en-IN', { 
+                                      hour: '2-digit', 
+                                      minute: '2-digit',
+                                      hour12: true
+                                    }) : 'No time'
+                                  }
+                                </span>
                               </div>
                               <div className="flex items-center gap-1">
                                 <Users className="h-4 w-4 flex-shrink-0" />
@@ -994,7 +1380,7 @@ const PassengerDashboard = ({ user }) => {
             <div className="bg-white rounded-lg shadow-sm p-6">
               {/* Tab Content for non-search tabs */}
               {activeTab === 'bookings' && (
-                <div className="bg-yellow-200 rounded-lg p-6">
+                <div className="bg-yellow-200 rounded-lg p-6 relative">
                   <h3 className="text-xl font-semibold mb-6 text-gray-800">My Bookings</h3>
                   
                   {bookings.length === 0 ? (
@@ -1019,7 +1405,27 @@ const PassengerDashboard = ({ user }) => {
                               <div className="flex items-center space-x-4 text-sm text-gray-600">
                                 <div className="flex items-center space-x-1">
                                   <Calendar className="h-4 w-4" />
-                                  <span>{booking.departureDate ? new Date(booking.departureDate).toLocaleDateString() : 'N/A'}</span>
+                                  <span>
+                                    {(booking.departureDate || booking.ride?.departureDate) ? 
+                                      new Date(booking.departureDate || booking.ride?.departureDate).toLocaleDateString('en-IN', {
+                                        day: '2-digit',
+                                        month: 'short',
+                                        year: 'numeric'
+                                      }) : 'N/A'
+                                    }
+                                  </span>
+                                </div>
+                                <div className="flex items-center space-x-1">
+                                  <Clock className="h-4 w-4" />
+                                  <span>
+                                    {(booking.departureDate || booking.ride?.departureDate) ? 
+                                      new Date(booking.departureDate || booking.ride?.departureDate).toLocaleTimeString('en-IN', { 
+                                        hour: '2-digit', 
+                                        minute: '2-digit',
+                                        hour12: true
+                                      }) : 'N/A'
+                                    }
+                                  </span>
                                 </div>
                                 <div className="flex items-center space-x-1">
                                   <Clock className="h-4 w-4" />
@@ -1060,7 +1466,7 @@ const PassengerDashboard = ({ user }) => {
                                 <>
                                   <button
                                     onClick={() => setPaymentModal({ isOpen: true, booking: booking })}
-                                    className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+                                    className="bg-yellow-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-yellow-700 transition-colors"
                                   >
                                     Pay Now
                                   </button>
@@ -1098,7 +1504,7 @@ const PassengerDashboard = ({ user }) => {
               )}
 
               {activeTab === 'history' && (
-                <div className="bg-yellow-200 rounded-lg p-6">
+                <div className="bg-yellow-200 rounded-lg p-6 relative">
                   <h3 className="text-xl font-semibold mb-6 text-gray-800">Ride History</h3>
                   
                   {rideHistory.length === 0 ? (
@@ -1110,50 +1516,11 @@ const PassengerDashboard = ({ user }) => {
                   ) : (
                     <div className="space-y-4">
                       {Array.isArray(rideHistory) && rideHistory.map((ride, index) => (
-                        <div key={index} className="bg-yellow-100 border border-yellow-700 rounded-lg p-6 hover:shadow-lg transition-shadow shadow-sm">
-                          <div className="flex justify-between items-start mb-4">
-                            <div className="flex-1">
-                              <div className="flex items-center space-x-2 mb-2">
-                                <MapPin className="h-4 w-4 text-green-500" />
-                                <span className="font-medium">{ride.source}</span>
-                                <span className="text-gray-400">→</span>
-                                <MapPin className="h-4 w-4 text-red-500" />
-                                <span className="font-medium">{ride.destination}</span>
-                              </div>
-                              <div className="flex items-center space-x-4 text-sm text-gray-600">
-                                <div className="flex items-center space-x-1">
-                                  <Calendar className="h-4 w-4" />
-                                  <span>{new Date(ride.departureTime).toLocaleDateString()}</span>
-                                </div>
-                                <div className="flex items-center space-x-1">
-                                  <Clock className="h-4 w-4" />
-                                  <span>{new Date(ride.departureTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                                </div>
-                              </div>
-                            </div>
-                            <div className="text-right">
-                              <div className="text-xl font-bold text-gray-900">₹{ride.pricePerSeat}</div>
-                              <div className="text-sm text-gray-500">Completed</div>
-                            </div>
-                          </div>
-                          
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center space-x-3">
-                              <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center">
-                                <span className="text-sm font-medium">{ride.driver?.firstName?.[0]}</span>
-                              </div>
-                              <div>
-                                <p className="font-medium">{ride.driver?.firstName} {ride.driver?.lastName}</p>
-                                <p className="text-sm text-gray-500">Driver</p>
-                              </div>
-                            </div>
-                            
-                            <div className="flex items-center space-x-2">
-                              <Star className="h-4 w-4 text-yellow-400 fill-current" />
-                              <span className="text-sm text-gray-600">5.0</span>
-                            </div>
-                          </div>
-                        </div>
+                        <RideHistoryCard 
+                          key={index} 
+                          ride={ride} 
+                          user={user}
+                        />
                       ))}
                     </div>
                   )}
@@ -1161,9 +1528,234 @@ const PassengerDashboard = ({ user }) => {
               )}
 
               {activeTab === 'payments' && (
-                <div className="bg-yellow-200 rounded-lg p-6">
+                <div className="bg-yellow-200 rounded-lg p-6 relative">
+                  {/* Payments Loading Overlay */}
+                  {paymentsLoading && (
+                    <div className="absolute inset-0 bg-white flex flex-col items-center justify-center z-50 rounded-lg">
+                      <Loader 
+                        size={250}
+                        showText={true}
+                        text="Loading payment history..."
+                        className="mb-4"
+                      />
+                      <div className="text-center">
+                        <h4 className="text-lg font-medium text-gray-900 mb-2">
+                          Fetching Payment Information
+                        </h4>
+                        <p className="text-sm text-gray-600">
+                          Please wait while we load your payment history...
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                  
                   <h3 className="text-xl font-semibold mb-6">Payment History</h3>
                   <PaymentHistory user={user} userType="passenger" />
+                </div>
+              )}
+
+              {activeTab === 'profile' && (
+                <div className="bg-white rounded-lg p-6 shadow-sm relative">
+                  {/* Profile Loading Overlay */}
+                  {profileLoading && (
+                    <div className="absolute inset-0 bg-white flex flex-col items-center justify-center z-50 rounded-lg">
+                      <Loader 
+                        size={250}
+                        showText={true}
+                        text="Loading profile data..."
+                        className="mb-4"
+                      />
+                      <div className="text-center">
+                        <h4 className="text-lg font-medium text-gray-900 mb-2">
+                          Fetching Profile Information
+                        </h4>
+                        <p className="text-sm text-gray-600">
+                          Please wait while we load your account details...
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {error && (
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+                      <p className="text-red-700">{error}</p>
+                    </div>
+                  )}
+
+                  {!isEditingProfile ? (
+                    // Profile Display Mode
+                    <div className="text-center">
+                      <div className="mb-8">
+                        <div className="w-24 h-24 bg-yellow-100 rounded-full mx-auto mb-4 flex items-center justify-center">
+                          <span className="text-2xl font-bold text-yellow-600">
+                            {profileData.firstName?.charAt(0)?.toUpperCase() || user?.firstName?.charAt(0)?.toUpperCase() || 'U'}
+                          </span>
+                        </div>
+                        <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                          {profileData.firstName && profileData.lastName 
+                            ? `${profileData.firstName} ${profileData.lastName}`
+                            : `${user?.firstName || 'User'} ${user?.lastName || ''}`
+                          }
+                        </h2>
+                        <p className="text-gray-600">
+                          {profileData.email || user?.email || 'No email provided'}
+                        </p>
+                        <p className="text-gray-600">
+                          {profileData.phoneNumber || user?.phoneNumber || 'No phone number'}
+                        </p>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                        <div className="bg-gray-50 p-4 rounded-lg">
+                          <h4 className="font-medium text-gray-900 mb-2">Date of Birth</h4>
+                          <p className="text-gray-600">
+                            {profileData.dateOfBirth 
+                              ? new Date(profileData.dateOfBirth).toLocaleDateString()
+                              : 'Not provided'
+                            }
+                          </p>
+                        </div>
+                        <div className="bg-gray-50 p-4 rounded-lg">
+                          <h4 className="font-medium text-gray-900 mb-2">Member Since</h4>
+                          <p className="text-gray-600">
+                            {user?.createdAt 
+                              ? new Date(user.createdAt).toLocaleDateString()
+                              : 'Recently joined'
+                            }
+                          </p>
+                        </div>
+                      </div>
+
+                      {profileData.address && (
+                        <div className="bg-gray-50 p-4 rounded-lg mb-8">
+                          <h4 className="font-medium text-gray-900 mb-2">Address</h4>
+                          <p className="text-gray-600">{profileData.address}</p>
+                        </div>
+                      )}
+
+                      <button
+                        onClick={() => setIsEditingProfile(true)}
+                        className="bg-yellow-600 text-white px-6 py-3 rounded-lg hover:bg-yellow-700 transition-colors text-lg font-medium"
+                      >
+                        Edit Profile Details
+                      </button>
+                    </div>
+                  ) : (
+                    // Profile Edit Mode
+                    <div>
+                      <div className="flex justify-between items-center mb-6">
+                        <h3 className="text-xl font-semibold text-gray-900">Edit Profile</h3>
+                        <button
+                          onClick={() => setIsEditingProfile(false)}
+                          className="text-gray-500 hover:text-gray-700"
+                        >
+                          ✕
+                        </button>
+                      </div>
+
+                      <form onSubmit={handleProfileUpdate} className="space-y-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              First Name *
+                            </label>
+                            <input
+                              type="text"
+                              value={profileData.firstName}
+                              onChange={(e) => handleProfileInputChange('firstName', e.target.value)}
+                              required
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                            />
+                          </div>
+                          
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Last Name *
+                            </label>
+                            <input
+                              type="text"
+                              value={profileData.lastName}
+                              onChange={(e) => handleProfileInputChange('lastName', e.target.value)}
+                              required
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                            />
+                          </div>
+                          
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Email *
+                            </label>
+                            <input
+                              type="email"
+                              value={profileData.email}
+                              onChange={(e) => handleProfileInputChange('email', e.target.value)}
+                              required
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                            />
+                          </div>
+                          
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Phone Number
+                            </label>
+                            <input
+                              type="tel"
+                              value={profileData.phoneNumber}
+                              disabled={true}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-500 cursor-not-allowed"
+                              placeholder="Phone number cannot be changed"
+                            />
+                            <p className="text-xs text-gray-500 mt-1">Phone number cannot be modified for security reasons</p>
+                          </div>
+                          
+                          <div className="md:col-span-2">
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Date of Birth
+                            </label>
+                            <input
+                              type="date"
+                              value={profileData.dateOfBirth}
+                              onChange={(e) => handleProfileInputChange('dateOfBirth', e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                            />
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Address
+                          </label>
+                          <textarea
+                            value={profileData.address}
+                            onChange={(e) => handleProfileInputChange('address', e.target.value)}
+                            rows="3"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                            placeholder="Enter your full address"
+                          />
+                        </div>
+
+                        <div className="flex space-x-4 pt-4 border-t">
+                          <button
+                            type="submit"
+                            disabled={profileLoading}
+                            className="bg-yellow-600 text-white px-6 py-2 rounded-lg hover:bg-yellow-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                          >
+                            {profileLoading ? 'Saving...' : 'Save Changes'}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setIsEditingProfile(false)
+                              fetchUserProfile() // Reset form data
+                            }}
+                            className="bg-gray-500 text-white px-6 py-2 rounded-lg hover:bg-gray-600 transition-colors"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </form>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -1178,7 +1770,346 @@ const PassengerDashboard = ({ user }) => {
         booking={paymentModal.booking}
         onPaymentSuccess={handlePaymentSuccess}
       />
+      
+      {/* Toast Container */}
+      <ToastContainer
+        position="top-right"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+        style={{ zIndex: 9999 }}
+      />
     </div>
+  )
+}
+
+// Rating Modal Component
+const RatingModal = ({ isOpen, onClose, ride, user, onRatingSubmitted }) => {
+  const [rating, setRating] = useState(0)
+  const [comment, setComment] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    
+    // Validate that a rating is selected
+    if (rating === 0) {
+      toast.warning('⚠️ Please select a rating before submitting.', {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      })
+      return
+    }
+    
+    setSubmitting(true)
+
+    try {
+      const ratingData = {
+        rating: rating,
+        comment: comment,
+        driverId: ride.driverId,
+        bookingId: ride.id
+      }
+
+      await apiService.createRating(user.id, ratingData)
+      toast.success('⭐ Rating submitted successfully!', {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      })
+      onRatingSubmitted()
+      onClose()
+    } catch (error) {
+      console.error('Error submitting rating:', error)
+      toast.error('❌ Failed to submit rating. Please try again.', {
+        position: "top-right",
+        autoClose: 4000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      })
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  if (!isOpen) return null
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+        <h3 className="text-lg font-semibold mb-4">Rate Your Ride</h3>
+        
+        <div className="mb-4">
+          <p className="text-sm text-gray-600 mb-2">Driver: {ride.driverName}</p>
+          <p className="text-sm text-gray-600 mb-4">{ride.source} → {ride.destination}</p>
+        </div>
+
+        <form onSubmit={handleSubmit}>
+          <div className="mb-4">
+            <label className="block text-sm font-medium mb-2">Rating</label>
+            <div className="flex space-x-1">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <button
+                  key={star}
+                  type="button"
+                  onClick={() => setRating(star)}
+                  className="text-2xl focus:outline-none"
+                >
+                  <Star 
+                    className={`w-6 h-6 ${
+                      star <= rating ? 'text-yellow-400 fill-current' : 'text-gray-300'
+                    }`}
+                  />
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="mb-4">
+            <label className="block text-sm font-medium mb-2">Comment (Optional)</label>
+            <textarea
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              placeholder="Share your experience..."
+              className="w-full p-2 border border-gray-300 rounded-md resize-none"
+              rows="3"
+              maxLength="500"
+            />
+          </div>
+
+          <div className="flex space-x-3">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={submitting}
+              className="flex-1 px-4 py-2 bg-yellow-600 text-white rounded-md hover:bg-yellow-700 disabled:opacity-50"
+            >
+              {submitting ? 'Submitting...' : 'Submit Rating'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+// Ride History Card Component
+const RideHistoryCard = ({ ride, user }) => {
+  const [showDetails, setShowDetails] = useState(false)
+  const [showRatingModal, setShowRatingModal] = useState(false)
+  const [existingRating, setExistingRating] = useState(null)
+
+  // Fetch existing rating when component mounts
+  useEffect(() => {
+    const fetchExistingRating = async () => {
+      try {
+        if (ride.status === 'COMPLETED') {
+          const response = await apiService.getPassengerRatings(user.id)
+          if (response.status === 'SUCCESS' && response.data) {
+            const rating = response.data.find(r => r.bookingId === ride.id)
+            setExistingRating(rating)
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching existing rating:', error)
+      }
+    }
+
+    fetchExistingRating()
+  }, [ride.id, ride.status, user.id])
+
+  const handleRatingSubmitted = () => {
+    // Refresh the existing rating
+    const fetchUpdatedRating = async () => {
+      try {
+        const response = await apiService.getPassengerRatings(user.id)
+        if (response.status === 'SUCCESS' && response.data) {
+          const rating = response.data.find(r => r.bookingId === ride.id)
+          setExistingRating(rating)
+        }
+      } catch (error) {
+        console.error('Error fetching updated rating:', error)
+      }
+    }
+    fetchUpdatedRating()
+  }
+
+  return (
+    <>
+      <div className="bg-white border border-gray-200 rounded-lg p-4 mb-4 shadow-sm hover:shadow-md transition-shadow">
+        {/* Main Content */}
+        <div className="flex justify-between items-start mb-3">
+          <div className="flex-1">
+            {/* Route */}
+            <div className="flex items-center space-x-2 mb-2">
+              <MapPin className="h-4 w-4 text-green-500" />
+              <span className="font-medium text-gray-900">{ride.source}</span>
+              <span className="text-gray-400">→</span>
+              <MapPin className="h-4 w-4 text-red-500" />
+              <span className="font-medium text-gray-900">{ride.destination}</span>
+            </div>
+            
+            {/* Date and Time */}
+            <div className="flex items-center space-x-4 text-sm text-gray-600 mb-1">
+              <div className="flex items-center space-x-1">
+                <Calendar className="h-4 w-4" />
+                <span>
+                  {ride.departureDate ? 
+                    new Date(ride.departureDate).toLocaleDateString('en-IN', {
+                      day: '2-digit',
+                      month: 'short',
+                      year: 'numeric'
+                    }) : 'Date not available'
+                  }
+                </span>
+              </div>
+              <div className="flex items-center space-x-1">
+                <Clock className="h-4 w-4" />
+                <span>
+                  {ride.departureDate ? 
+                    new Date(ride.departureDate).toLocaleTimeString('en-IN', { 
+                      hour: '2-digit', 
+                      minute: '2-digit',
+                      hour12: true
+                    }) : 'Time not available'
+                  }
+                </span>
+              </div>
+            </div>
+            
+            {/* Driver */}
+            <p className="text-sm text-gray-600">
+              <span className="font-medium">Driver:</span> {ride.driverName || 'Not assigned'}
+            </p>
+          </div>
+          
+          {/* Price and Actions */}
+          <div className="text-right">
+            <div className="text-xl font-bold text-gray-900 mb-1">₹{ride.pricePerSeat || ride.totalAmount || '0'}</div>
+            <div className={`text-xs px-2 py-1 rounded-full inline-block mb-2 ${
+              ride.status === 'COMPLETED' ? 'bg-green-100 text-green-800' :
+              ride.status === 'CANCELLED' ? 'bg-red-100 text-red-800' :
+              'bg-gray-100 text-gray-800'
+            }`}>
+              {ride.status}
+            </div>
+            
+            {/* Rating Section */}
+            {ride.status === 'COMPLETED' && (
+              <div className="mt-2">
+                {existingRating ? (
+                  <div className="text-center">
+                    <div className="flex justify-center items-center space-x-1 mb-1">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <Star 
+                          key={star}
+                          className={`w-4 h-4 ${
+                            star <= existingRating.rating ? 'text-yellow-400 fill-current' : 'text-gray-300'
+                          }`}
+                        />
+                      ))}
+                    </div>
+                    <p className="text-xs text-gray-600">Rated</p>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setShowRatingModal(true)}
+                    className="text-xs bg-yellow-600 text-white px-3 py-1 rounded-full hover:bg-yellow-700 transition-colors"
+                  >
+                    Rate Now
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+        
+        {/* View More Button */}
+        <div className="text-center">
+          <button
+            onClick={() => setShowDetails(!showDetails)}
+            className="text-sm text-blue-600 hover:text-blue-800 transition-colors"
+          >
+            {showDetails ? 'View Less' : 'View More'}
+          </button>
+        </div>
+        
+        {/* Detailed Information (Collapsible) */}
+        {showDetails && (
+          <div className="mt-3 pt-3 border-t border-gray-200">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+              <div className="space-y-1">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Contact:</span>
+                  <span className="font-medium">{ride.driverPhone || 'Not available'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Seats Booked:</span>
+                  <span className="font-medium">{ride.seatsBooked || '0'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Total Amount:</span>
+                  <span className="font-medium">₹{ride.totalAmount || '0'}</span>
+                </div>
+              </div>
+              
+              <div className="space-y-1">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Vehicle:</span>
+                  <span className="font-medium">
+                    {ride.vehicleMake && ride.vehicleModel ? 
+                      `${ride.vehicleMake} ${ride.vehicleModel}` : 
+                      ride.vehicleModel || 'Not specified'}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Vehicle Number:</span>
+                  <span className="font-medium">{ride.vehicleNumber || 'Not available'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Booking ID:</span>
+                  <span className="font-medium">#{ride.id || 'N/A'}</span>
+                </div>
+              </div>
+            </div>
+            
+            <div className="mt-2 text-xs text-gray-500 text-center">
+              Booked on: {ride.bookingDate ? new Date(ride.bookingDate).toLocaleDateString() : 'Date not available'}
+            </div>
+          </div>
+        )}
+      </div>
+      
+      {/* Rating Modal */}
+      <RatingModal
+        isOpen={showRatingModal}
+        onClose={() => setShowRatingModal(false)}
+        ride={ride}
+        user={user}
+        onRatingSubmitted={handleRatingSubmitted}
+      />
+    </>
   )
 }
 

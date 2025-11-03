@@ -1,11 +1,28 @@
 import { Link } from 'react-router-dom'
 import { ArrowRight, Shield, CreditCard, MapPin, Clock, Users, Briefcase } from 'lucide-react'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import AOS from 'aos'
 import 'aos/dist/aos.css'
 import { DotLottieReact } from '@lottiefiles/dotlottie-react'
+import Loader from './Loader'
 
 const LandingPage = () => {
+  const [isLoading, setIsLoading] = useState(false)
+  const [isPageLoading, setIsPageLoading] = useState(true)
+  const [currentQuote, setCurrentQuote] = useState(0)
+  
+  // Ride-sharing related quotes
+  const quotes = [
+    "Share the journey, share the joy! 🚗✨",
+    "Together we travel farther and smarter! 🌟",
+    "Your next adventure is just a ride away! 🛣️",
+    "Making every mile more affordable! 💰",
+    "Connect, travel, and save the planet! 🌍",
+    "Where every trip becomes a friendship! 👥",
+    "Smart rides for smart people! 🧠",
+    "Reducing carbon footprint, one ride at a time! 🌱"
+  ]
+
   useEffect(() => {
     AOS.init({
       duration: 1000,
@@ -15,8 +32,70 @@ const LandingPage = () => {
     })
   }, [])
 
+  // Initial page loading effect
+  useEffect(() => {
+    const initializePage = async () => {
+      // Simulate page loading time
+      await new Promise(resolve => setTimeout(resolve, 2500))
+      setIsPageLoading(false)
+    }
+    
+    initializePage()
+  }, [])
+
+  // Handle quote rotation during any loading
+  useEffect(() => {
+    let interval = null
+    if (isLoading || isPageLoading) {
+      interval = setInterval(() => {
+        setCurrentQuote(prev => (prev + 1) % quotes.length)
+      }, 2000) // Change quote every 2 seconds
+    }
+    return () => {
+      if (interval) clearInterval(interval)
+    }
+  }, [isLoading, isPageLoading, quotes.length])
+
+  const handleSignUpClick = (type) => {
+    setIsLoading(true)
+    // Simulate navigation delay
+    setTimeout(() => {
+      window.location.href = `/register?type=${type}`
+    }, 3000)
+  }
+
   return (
     <div className="min-h-screen">
+      {/* Initial Page Loading */}
+      {isPageLoading && (
+        <div className="fixed inset-0 bg-gradient-to-br from-yellow-50 to-orange-50 flex flex-col items-center justify-center z-50">
+          <Loader 
+            size={280}
+            showText={false}
+            className="mb-8"
+          />
+          <div className="text-center max-w-lg mx-auto px-4">
+            <h1 className="text-4xl font-bold text-gray-900 mb-4">
+              Welcome to <span className="text-yellow-500">SmartRide</span>
+            </h1>
+            <p className="text-xl text-yellow-600 font-me dium mb-2 animate-pulse">
+              {quotes[currentQuote]}
+            </p>
+            <div className="flex justify-center space-x-2 mt-6">
+              {quotes.map((_, index) => (
+                <div
+                  key={index}
+                  className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                    index === currentQuote ? 'bg-yellow-500 scale-125' : 'bg-gray-300'
+                  }`}
+                />
+              ))}
+            </div>
+            <p className="text-sm text-gray-500 mt-4">Loading your journey...</p>
+          </div>
+        </div>
+      )}
+
       {/* Hero Section */}
       <section className="bg-gradient-to-br from-yellow-50 to-orange-50 py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -31,18 +110,20 @@ const LandingPage = () => {
                 Connect with fellow travelers heading in the same direction. Split costs, reduce emissions, and make new connections on every trip.
               </p>
               <div className="flex flex-col sm:flex-row gap-4" data-aos="fade-up" data-aos-delay="400">
-                <Link
-                  to="/register?type=passenger"
-                  className="bg-yellow-500 hover:bg-yellow-600 text-white px-8 py-4 rounded-lg font-semibold text-lg transition-all duration-200 hover:shadow-lg text-center transform hover:scale-105"
+                <button
+                  onClick={() => handleSignUpClick('passenger')}
+                  disabled={isLoading}
+                  className="bg-yellow-500 hover:bg-yellow-600 text-white px-8 py-4 rounded-lg font-semibold text-lg transition-all duration-200 hover:shadow-lg text-center transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Find a Ride
-                </Link>
-                <Link
-                  to="/register?type=driver"
-                  className="border-2 border-yellow-500 text-yellow-600 hover:bg-yellow-500 hover:text-white px-8 py-4 rounded-lg font-semibold text-lg transition-all duration-200 text-center transform hover:scale-105"
+                </button>
+                <button
+                  onClick={() => handleSignUpClick('driver')}
+                  disabled={isLoading}
+                  className="border-2 border-yellow-500 text-yellow-600 hover:bg-yellow-500 hover:text-white px-8 py-4 rounded-lg font-semibold text-lg transition-all duration-200 text-center transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Offer a Ride
-                </Link>
+                </button>
               </div>
             </div>
 
@@ -365,21 +446,52 @@ const LandingPage = () => {
             Join thousands of travelers who are already saving money and reducing their carbon footprint.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center" data-aos="fade-up" data-aos-delay="300">
-            <Link
-              to="/register?type=passenger"
-              className="bg-white text-yellow-600 hover:bg-gray-50 px-8 py-4 rounded-lg font-semibold text-lg transition-all duration-200 hover:shadow-lg transform hover:scale-105"
+            <button
+              onClick={() => handleSignUpClick('passenger')}
+              disabled={isLoading}
+              className="bg-white text-yellow-600 hover:bg-gray-50 px-8 py-4 rounded-lg font-semibold text-lg transition-all duration-200 hover:shadow-lg transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Sign Up as Passenger
-            </Link>
-            <Link
-              to="/register?type=driver"
-              className="border-2 border-white text-white hover:bg-white hover:text-yellow-600 px-8 py-4 rounded-lg font-semibold text-lg transition-all duration-200 transform hover:scale-105"
+            </button>
+            <button
+              onClick={() => handleSignUpClick('driver')}
+              disabled={isLoading}
+              className="border-2 border-white text-white hover:bg-white hover:text-yellow-600 px-8 py-4 rounded-lg font-semibold text-lg transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Sign Up as Driver
-            </Link>
+            </button>
           </div>
         </div>
       </section>
+
+      {/* Loading Overlay with Quotes */}
+      {isLoading && (
+        <div className="fixed inset-0 bg-white bg-opacity-95 flex flex-col items-center justify-center z-50">
+          <Loader 
+            size={250}
+            showText={false}
+            className="mb-8"
+          />
+          <div className="text-center max-w-lg mx-auto px-4">
+            <h3 className="text-2xl font-bold text-gray-900 mb-4">
+              Getting Ready for Your Journey...
+            </h3>
+            <p className="text-xl text-yellow-600 font-medium mb-2 animate-pulse">
+              {quotes[currentQuote]}
+            </p>
+            <div className="flex justify-center space-x-2 mt-6">
+              {quotes.map((_, index) => (
+                <div
+                  key={index}
+                  className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                    index === currentQuote ? 'bg-yellow-500 scale-125' : 'bg-gray-300'
+                  }`}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

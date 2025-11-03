@@ -1,5 +1,7 @@
 package com.ridesharing.service;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -20,6 +22,8 @@ import java.util.List;
 @Transactional
 public class UserService implements UserDetailsService {
 
+    private static final Logger logger = LoggerFactory.getLogger(UserService.class);
+    
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
@@ -90,10 +94,12 @@ public class UserService implements UserDetailsService {
         User user = getUserById(userId);
         user.setIsActive(false);
         userRepository.save(user);
+        logger.info("User with ID {} marked as inactive (soft deleted)", userId);
     }
 
     public List<User> getAllUsers() {
-        return userRepository.findAll();
+        // Only return active users for admin dashboard
+        return userRepository.findByIsActiveTrue();
     }
 
     public boolean existsByPhoneNumber(String phoneNumber) {

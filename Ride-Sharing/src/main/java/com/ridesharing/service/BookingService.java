@@ -28,6 +28,7 @@ public class BookingService {
     private final RideRepository rideRepository;
     private final UserService userService;
     private final EmailService emailService;
+    private final RideReminderService reminderService;
 
     public BookingResponseDto bookRide(String phoneNumber, BookingDto bookingDto) {
         User passenger = userService.getUserByPhoneNumber(phoneNumber);
@@ -126,6 +127,14 @@ public class BookingService {
         rideRepository.save(ride);
         Booking updatedBooking = bookingRepository.save(booking);
         
+        // Cancel any scheduled reminders for this booking
+        try {
+            reminderService.cancelRemindersForBooking(bookingId);
+        } catch (Exception e) {
+            // Log error but don't fail the booking cancellation
+            System.err.println("Failed to cancel ride reminders: " + e.getMessage());
+        }
+        
         return convertToResponseDto(updatedBooking);
     }
 
@@ -190,6 +199,14 @@ public class BookingService {
             System.err.println("Failed to send confirmation email: " + e.getMessage());
         }
         
+        // Schedule ride reminders for the confirmed booking
+        try {
+            reminderService.scheduleRemindersForBooking(savedBooking);
+        } catch (Exception e) {
+            // Log error but don't fail the booking confirmation
+            System.err.println("Failed to schedule ride reminders: " + e.getMessage());
+        }
+        
         return convertToResponseDto(savedBooking);
     }
 
@@ -236,6 +253,14 @@ public class BookingService {
         } catch (Exception e) {
             // Log error but don't fail the booking cancellation
             System.err.println("Failed to send cancellation email: " + e.getMessage());
+        }
+        
+        // Cancel any scheduled reminders for this booking
+        try {
+            reminderService.cancelRemindersForBooking(bookingId);
+        } catch (Exception e) {
+            // Log error but don't fail the booking cancellation
+            System.err.println("Failed to cancel ride reminders: " + e.getMessage());
         }
         
         return convertToResponseDto(savedBooking);
@@ -294,6 +319,7 @@ public class BookingService {
         dto.setSource(booking.getRide().getSource());
         dto.setDestination(booking.getRide().getDestination());
         dto.setDepartureDate(booking.getRide().getDepartureDate());
+        dto.setDriverId(booking.getRide().getDriver().getId());
         dto.setDriverName(booking.getRide().getDriver().getFirstName() + " " + 
                          booking.getRide().getDriver().getLastName());
         dto.setDriverPhone(booking.getRide().getDriver().getPhoneNumber());
@@ -310,6 +336,8 @@ public class BookingService {
         dto.setVehicleModel(booking.getRide().getVehicleModel());
         dto.setVehicleColor(booking.getRide().getVehicleColor());
         dto.setVehicleNumber(booking.getRide().getVehicleNumber());
+        dto.setVehicleMake(booking.getRide().getVehicleType());
+        dto.setPricePerSeat(booking.getRide().getPricePerSeat());
         
         return dto;
     }

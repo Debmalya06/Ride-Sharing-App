@@ -2,9 +2,11 @@ import { useState, useEffect } from 'react'
 import { Car, Plus, MapPin, Clock, Users, IndianRupee, Calendar, Eye } from 'lucide-react'
 import apiService from '../services/api'
 import DriverWallet from './DriverWallet'
+import Loader from './Loader'
 
 const DriverDashboard = ({ user }) => {
   const [activeTab, setActiveTab] = useState('overview')
+  const [isDashboardLoading, setIsDashboardLoading] = useState(true)
   const [rides, setRides] = useState([])
   const [bookings, setBookings] = useState([])
   const [loading, setLoading] = useState(false)
@@ -22,8 +24,23 @@ const DriverDashboard = ({ user }) => {
   const [calculatingFare, setCalculatingFare] = useState(false)
 
   useEffect(() => {
-    fetchData()
+    const initializeDashboard = async () => {
+      // Simulate initial data loading
+      await new Promise(resolve => setTimeout(resolve, 2500))
+      setIsDashboardLoading(false)
+      
+      // Load data after initial loading
+      fetchData()
+    }
+    
+    initializeDashboard()
   }, [])
+
+  // Handle tab switching - no more full page loading
+  const handleTabSwitch = (newTab) => {
+    if (newTab === activeTab) return // Don't switch if already on the same tab
+    setActiveTab(newTab)
+  }
 
   const fetchData = async () => {
     setLoading(true)
@@ -52,7 +69,50 @@ const DriverDashboard = ({ user }) => {
     setLoading(true)
     setError('')
 
+    // Frontend validation
     try {
+      // Validate required fields
+      if (!postRideForm.from.trim()) {
+        throw new Error('Please enter departure location')
+      }
+      if (!postRideForm.to.trim()) {
+        throw new Error('Please enter destination location')
+      }
+      if (!postRideForm.date) {
+        throw new Error('Please select departure date')
+      }
+      if (!postRideForm.time) {
+        throw new Error('Please select departure time')
+      }
+      if (!postRideForm.seats || parseInt(postRideForm.seats) < 1) {
+        throw new Error('Please select number of available seats')
+      }
+      if (!postRideForm.price || parseFloat(postRideForm.price) < 1) {
+        throw new Error('Please enter a valid price per seat')
+      }
+
+      // Validate date is not in the past
+      const selectedDateTime = new Date(`${postRideForm.date}T${postRideForm.time}`)
+      const now = new Date()
+      if (selectedDateTime <= now) {
+        throw new Error('Departure date and time must be in the future')
+      }
+
+      // Validate price range
+      const price = parseFloat(postRideForm.price)
+      if (price < 10) {
+        throw new Error('Price per seat must be at least ₹10')
+      }
+      if (price > 10000) {
+        throw new Error('Price per seat cannot exceed ₹10,000')
+      }
+
+      // Validate seat count
+      const seats = parseInt(postRideForm.seats)
+      if (seats < 1 || seats > 8) {
+        throw new Error('Available seats must be between 1 and 8')
+      }
+
       const response = await apiService.postRide(postRideForm)
       
       if (response.status === 'SUCCESS') {
@@ -66,11 +126,14 @@ const DriverDashboard = ({ user }) => {
           price: '',
           notes: ''
         })
+        setFareCalculation(null) // Reset fare calculation
         fetchData() // Refresh rides list
+        await handleTabSwitch('my-rides') // Switch to My Rides tab to see the posted ride
       } else {
         setError(response.message || 'Failed to post ride')
       }
     } catch (err) {
+      console.error('Error posting ride:', err)
       setError(err.message || 'Failed to post ride')
     } finally {
       setLoading(false)
@@ -174,6 +237,31 @@ const DriverDashboard = ({ user }) => {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Initial Dashboard Loading */}
+      {isDashboardLoading && (
+        <div className="fixed inset-0 bg-white bg-opacity-98 flex flex-col items-center justify-center z-50">
+          <Loader 
+            size={250}
+            showText={true}
+            text="Loading your driver dashboard..."
+            className="mb-8"
+          />
+          <div className="text-center max-w-lg mx-auto px-4">
+            <h3 className="text-2xl font-bold text-gray-900 mb-4">
+              Ready to Hit the Road! 🚗💨
+            </h3>
+            <p className="text-lg text-gray-600 mb-2">
+              Setting up your driving experience...
+            </p>
+            <div className="flex justify-center items-center space-x-2 mt-6">
+              <div className="w-3 h-3 bg-yellow-500 rounded-full animate-ping"></div>
+              <div className="w-3 h-3 bg-yellow-500 rounded-full animate-ping" style={{ animationDelay: '0.2s' }}></div>
+              <div className="w-3 h-3 bg-yellow-500 rounded-full animate-ping" style={{ animationDelay: '0.4s' }}></div>
+            </div>
+          </div>
+        </div>
+      )}
+      
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
@@ -226,7 +314,7 @@ const DriverDashboard = ({ user }) => {
           <div className="border-b border-gray-200">
             <nav className="flex space-x-8 px-6">
               <button
-                onClick={() => setActiveTab('overview')}
+                onClick={() => handleTabSwitch('overview')}
                 className={`py-4 px-1 border-b-2 font-medium text-sm ${
                   activeTab === 'overview'
                     ? 'border-yellow-500 text-yellow-600'
@@ -236,7 +324,7 @@ const DriverDashboard = ({ user }) => {
                 Overview
               </button>
               <button
-                onClick={() => setActiveTab('post-ride')}
+                onClick={() => handleTabSwitch('post-ride')}
                 className={`py-4 px-1 border-b-2 font-medium text-sm ${
                   activeTab === 'post-ride'
                     ? 'border-yellow-500 text-yellow-600'
@@ -246,7 +334,7 @@ const DriverDashboard = ({ user }) => {
                 Post New Ride
               </button>
               <button
-                onClick={() => setActiveTab('my-rides')}
+                onClick={() => handleTabSwitch('my-rides')}
                 className={`py-4 px-1 border-b-2 font-medium text-sm ${
                   activeTab === 'my-rides'
                     ? 'border-yellow-500 text-yellow-600'
@@ -256,7 +344,7 @@ const DriverDashboard = ({ user }) => {
                 My Rides
               </button>
               <button
-                onClick={() => setActiveTab('bookings')}
+                onClick={() => handleTabSwitch('bookings')}
                 className={`py-4 px-1 border-b-2 font-medium text-sm ${
                   activeTab === 'bookings'
                     ? 'border-yellow-500 text-yellow-600'
@@ -266,7 +354,7 @@ const DriverDashboard = ({ user }) => {
                 Bookings
               </button>
               <button
-                onClick={() => setActiveTab('wallet')}
+                onClick={() => handleTabSwitch('wallet')}
                 className={`py-4 px-1 border-b-2 font-medium text-sm ${
                   activeTab === 'wallet'
                     ? 'border-yellow-500 text-yellow-600'
@@ -277,6 +365,16 @@ const DriverDashboard = ({ user }) => {
               </button>
             </nav>
           </div>
+
+          {/* Main Content */}
+            {loading && (
+              <Loader 
+                overlay={true} 
+                text="Loading..." 
+                size={180}
+                className="bg-white bg-opacity-95 rounded-lg"
+              />
+            )}
 
           <div className="p-6">
             {activeTab === 'overview' && (
@@ -430,6 +528,8 @@ const DriverDashboard = ({ user }) => {
                       <option value="4">4</option>
                       <option value="5">5</option>
                       <option value="6">6</option>
+                      <option value="7">7</option>
+                      <option value="8">8</option>
                     </select>
                   </div>
                   <div>

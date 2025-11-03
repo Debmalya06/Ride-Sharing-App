@@ -13,6 +13,7 @@ public class BookingResponseDto {
     private String source;
     private String destination;
     private LocalDateTime departureDate;
+    private Long driverId;
     private String driverName;
     private String driverPhone;
     private Integer seatsBooked;
@@ -28,4 +29,6 @@ public class BookingResponseDto {
     private String vehicleModel;
     private String vehicleColor;
     private String vehicleNumber;
+    private String vehicleMake;
+    private BigDecimal pricePerSeat;
 }
