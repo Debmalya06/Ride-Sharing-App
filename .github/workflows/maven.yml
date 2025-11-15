@@ -25,7 +25,7 @@ jobs:
         working-directory: Ride-Sharing
         run: mvn -B package -DskipTests
 
-      - name: Update dependency graph
-        uses: advanced-security/maven-dependency-submission-action@v1
-        with:
-          directory: Ride-Sharing
+      # - name: Update dependency graph
+      #   uses: advanced-security/maven-dependency-submission-action@v1
+      #   with:
+      #     directory: Ride-Sharing
