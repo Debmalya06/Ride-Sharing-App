@@ -1,5 +1,5 @@
 // API Configuration
-const API_BASE_URL = 'http://localhost:8080/api'
+const API_BASE_URL = 'https://ride-sharing-app-gw1f.onrender.com/api'
 
 // API Service Class
 class ApiService {

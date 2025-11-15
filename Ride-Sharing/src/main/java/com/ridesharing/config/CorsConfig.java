@@ -23,6 +23,7 @@ public class CorsConfig implements WebMvcConfigurer {
             "http://127.0.0.1:*",
             "https://localhost:*",
             "https://127.0.0.1:*",
+            "https://ride-sharing-app-ncr5.onrender.com",
             "http://localhost:3000", // React default port
             "http://localhost:5173"  // Vite default port
         ));
