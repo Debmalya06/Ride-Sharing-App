@@ -27,10 +27,11 @@ public class CorsConfig implements WebMvcConfigurer {
             "http://localhost:3000",     // React default port
             "http://localhost:5173",     // Vite default port
             
-            // Production - Render deployments
-            "https://ride-sharing-app-*.onrender.com",  // Any Render deployment
-            "https://ride-sharing-app-ncr5.onrender.com",  // Frontend
-            "https://ride-sharing-app-gw1f.onrender.com",  // Backend (for reference)
+            // Production - Render deployments (Frontend)
+            "https://ride-sharing-app-ncr5.onrender.com",
+            
+            // Production - All Render deployments pattern
+            "https://*.onrender.com",
             
             // Production - Custom domains (add as needed)
             "https://smartride.com",
@@ -40,16 +41,16 @@ public class CorsConfig implements WebMvcConfigurer {
         
         // Allow all HTTP methods
         configuration.setAllowedMethods(Arrays.asList(
-            "GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"
+            "GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH", "HEAD"
         ));
         
-        // Allow all headers
+        // Allow all headers from client
         configuration.setAllowedHeaders(Arrays.asList("*"));
         
         // Allow credentials (cookies, authorization headers, etc.)
         configuration.setAllowCredentials(true);
         
-        // How long the response from a pre-flight request can be cached
+        // How long the response from a pre-flight request can be cached (1 hour)
         configuration.setMaxAge(3600L);
         
         // Expose headers that the frontend can access
@@ -60,7 +61,8 @@ public class CorsConfig implements WebMvcConfigurer {
             "Accept",
             "Origin",
             "Access-Control-Request-Method",
-            "Access-Control-Request-Headers"
+            "Access-Control-Request-Headers",
+            "X-Total-Count"
         ));
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
