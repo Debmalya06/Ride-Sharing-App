@@ -19,13 +19,23 @@ public class CorsConfig implements WebMvcConfigurer {
         
         // Allow specific origins using patterns (supports wildcards with credentials)
         configuration.setAllowedOriginPatterns(Arrays.asList(
+            // Development - Local
             "http://localhost:*",
             "http://127.0.0.1:*",
             "https://localhost:*",
             "https://127.0.0.1:*",
-            "https://ride-sharing-app-ncr5.onrender.com",
-            "http://localhost:3000", // React default port
-            "http://localhost:5173"  // Vite default port
+            "http://localhost:3000",     // React default port
+            "http://localhost:5173",     // Vite default port
+            
+            // Production - Render deployments
+            "https://ride-sharing-app-*.onrender.com",  // Any Render deployment
+            "https://ride-sharing-app-ncr5.onrender.com",  // Frontend
+            "https://ride-sharing-app-gw1f.onrender.com",  // Backend (for reference)
+            
+            // Production - Custom domains (add as needed)
+            "https://smartride.com",
+            "https://www.smartride.com",
+            "https://*.smartride.com"
         ));
         
         // Allow all HTTP methods
