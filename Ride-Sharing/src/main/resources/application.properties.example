@@ -1,0 +1,117 @@
+spring.application.name=Ride-Sharing
+
+# ===== TESTING MODE =====
+# Uncomment the line below to use mock payment service (no real Razorpay needed)
+spring.profiles.active=mock-payment
+
+# ===== DATABASE CONFIGURATION =====
+# Required environment variables:
+# - DB_HOST (default: localhost)
+# - DB_PORT (default: 3306)
+# - DB_USERNAME (default: root)
+# - DB_PASSWORD (REQUIRED - no default)
+spring.datasource.url=jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/Ride_Sharing?createDatabaseIfNotExist=true
+spring.datasource.username=${DB_USERNAME:root}
+spring.datasource.password=${DB_PASSWORD}
+spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
+
+# Example values:
+# DB_HOST=localhost
+# DB_PORT=3306
+# DB_USERNAME=ride_sharing_user
+# DB_PASSWORD=SecurePassword123!
+
+# JPA Configuration
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.database-platform=org.hibernate.dialect.MySQL8Dialect
+spring.jpa.show-sql=true
+spring.jpa.properties.hibernate.format_sql=true
+
+# ===== JWT CONFIGURATION =====
+# Required environment variable:
+# - JWT_SECRET (REQUIRED - minimum 32 characters for production)
+jwt.secret=${JWT_SECRET}
+jwt.expiration=86400000
+jwt.refreshExpiration=604800000
+
+# Example value:
+# JWT_SECRET=your-super-secret-key-at-least-32-characters-long-for-production
+
+# Server Configuration
+server.port=8080
+
+# Logging
+logging.level.com.ridesharing=DEBUG
+logging.level.org.springframework.security=DEBUG
+
+# ===== EMAIL CONFIGURATION (SMTP) =====
+# Required environment variables:
+# - MAIL_HOST (e.g., smtp.gmail.com)
+# - MAIL_USERNAME (your email address)
+# - MAIL_PASSWORD (app-specific password for Gmail)
+# - APP_EMAIL_FROM (sender name and email)
+# - APP_EMAIL_SUPPORT (support email address)
+
+spring.mail.host=${MAIL_HOST}
+spring.mail.port=587
+spring.mail.username=${MAIL_USERNAME}
+spring.mail.password=${MAIL_PASSWORD}
+
+spring.mail.properties.mail.smtp.auth=true
+spring.mail.properties.mail.smtp.starttls.enable=true
+spring.mail.properties.mail.smtp.starttls.required=true
+spring.mail.properties.mail.smtp.ssl.protocols=TLSv1.2
+
+# Email Settings
+app.email.from=${APP_EMAIL_FROM}
+app.email.support=${APP_EMAIL_SUPPORT}
+
+# Example values:
+# MAIL_HOST=smtp.gmail.com
+# MAIL_USERNAME=your-email@gmail.com
+# MAIL_PASSWORD=xxxx xxxx xxxx xxxx (app-specific password)
+# APP_EMAIL_FROM=SmartRide <support@smartride.com>
+# APP_EMAIL_SUPPORT=support@smartride.com
+
+# ===== RAZORPAY CONFIGURATION =====
+# Required environment variables:
+# - RAZORPAY_KEY_ID (test or live key ID)
+# - RAZORPAY_KEY_SECRET (test or live key secret)
+
+razorpay.key.id=${RAZORPAY_KEY_ID}
+razorpay.key.secret=${RAZORPAY_KEY_SECRET}
+razorpay.currency=INR
+razorpay.company.name=SmartRide
+
+# Example values (Test Mode):
+# RAZORPAY_KEY_ID=rzp_test_xxxxxxxxxxxx
+# RAZORPAY_KEY_SECRET=xxxxxxxxxxxxxxxx
+
+# Platform Commission Configuration
+app.platform.commission=10.0
+
+# FREE Distance Calculator Configuration
+# No API keys needed! Uses OpenStreetMap + Nominatim (100% FREE)
+distance.calculator.mode=FREE_OPENSTREETMAP
+
+# Profitable Fare Configuration (Option 2)
+app.fare.base=50.00
+app.fare.ratePerKm=3.00
+app.fare.minFare=50.00
+app.fare.maxFare=5000.00
+app.fare.currency=INR
+
+# Ride Reminder Configuration
+app.reminders.scheduling.enabled=true
+app.reminders.retry.maxAttempts=3
+app.reminders.email.enabled=true
+app.reminders.sms.enabled=false
+
+# Enable scheduling
+spring.task.scheduling.enabled=true
+
+# Test Controllers Configuration (Set to false in production)
+app.test.controllers.enabled=true
+
+# Emergency SOS Configuration
+app.base.url=http://localhost:5173

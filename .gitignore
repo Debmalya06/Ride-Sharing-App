@@ -21,10 +21,13 @@ client/node_modules/
 .env.*.local
 
 # Configuration files with sensitive data
-**/application.properties
-Ride-Sharing/src/main/resources/application.properties
-application.properties.tem
-**/application-*.properties.tem
+# application.properties is committed with placeholders only
+# Ignore only local and environment-specific variants
+**/application-local.properties
+**/application-prod.properties
+**/application-*.local.properties
+Ride-Sharing/src/main/resources/application-local.properties
+Ride-Sharing/src/main/resources/application-prod.properties
 
 # Firebase credentials and keys (NEVER commit these!)
 **/*firebase*.json
