@@ -8,6 +8,13 @@ target/
 src/main/resources/application.properties
 src/main/resources/application-*.properties
 
+# Firebase credentials and keys (NEVER commit these!)
+src/main/resources/*firebase*.json
+src/main/resources/firebase-service-account-key.json
+.firebaserc
+firebase.json
+functions/node_modules/
+
 ### STS ###
 .apt_generated
 .classpath

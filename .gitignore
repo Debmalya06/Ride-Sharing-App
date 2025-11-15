@@ -26,6 +26,14 @@ Ride-Sharing/src/main/resources/application.properties
 application.properties
 **/application-*.properties
 
+# Firebase credentials and keys (NEVER commit these!)
+**/*firebase*.json
+**/firebase-service-account-key.json
+**/.firebaserc
+**/firebase.json
+**/functions/node_modules/
+FIREBASE_CREDENTIALS_TEMPLATE.md
+
 # Log files
 npm-debug.log*
 yarn-debug.log*
