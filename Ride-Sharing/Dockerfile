@@ -1,6 +1,8 @@
 FROM eclipse-temurin:21-jdk
+
 EXPOSE 8080
 
-ADD target/ride-sharing-app.jar ride-sharing-app.jar
+ARG JAR_FILE=target/*.jar
+COPY ${JAR_FILE} app.jar
 
-ENTRYPOINT ["java","-jar","/ride-sharing-app.jar"]
+ENTRYPOINT ["java", "-jar", "/app.jar"]
