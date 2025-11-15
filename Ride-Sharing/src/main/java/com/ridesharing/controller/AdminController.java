@@ -134,9 +134,11 @@ public class AdminController {
     }
 
     @PutMapping("/drivers/{driverDetailId}/reject")
-    public ResponseEntity<ApiResponse> rejectDriver(@PathVariable Long driverDetailId) {
+    public ResponseEntity<ApiResponse> rejectDriver(
+            @PathVariable Long driverDetailId,
+            @RequestParam(required = false, defaultValue = "Rejected by admin") String reason) {
         try {
-            DriverDetail rejectedDriver = driverDetailService.verifyDriverDetails(driverDetailId, false);
+            DriverDetail rejectedDriver = driverDetailService.rejectDriverDetails(driverDetailId, reason);
             ApiResponse response = new ApiResponse("SUCCESS", "Driver rejected successfully", rejectedDriver);
             return ResponseEntity.ok(response);
         } catch (Exception e) {

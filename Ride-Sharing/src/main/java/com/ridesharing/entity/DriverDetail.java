@@ -45,8 +45,11 @@ public class DriverDetail {
     @Column(name = "insurance_expiry")
     private LocalDateTime insuranceExpiry;
 
-    @Column(name = "is_verified")
+    @Column(name = "is_verified", nullable = false, columnDefinition = "BOOLEAN DEFAULT FALSE")
     private Boolean isVerified;
+
+    @Column(name = "rejection_reason", length = 500)
+    private String rejectionReason;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -58,6 +61,7 @@ public class DriverDetail {
     public DriverDetail() {
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
+        this.isVerified = false; // Default to unverified for new drivers
     }
 
     @PreUpdate
@@ -152,6 +156,14 @@ public class DriverDetail {
 
     public void setIsVerified(Boolean isVerified) {
         this.isVerified = isVerified;
+    }
+
+    public String getRejectionReason() {
+        return rejectionReason;
+    }
+
+    public void setRejectionReason(String rejectionReason) {
+        this.rejectionReason = rejectionReason;
     }
 
     public LocalDateTime getCreatedAt() {

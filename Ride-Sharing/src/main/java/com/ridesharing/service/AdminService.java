@@ -134,6 +134,7 @@ public class AdminService {
                 .vehicleColor(driverDetail.getCarColor())
                 .vehiclePlateNumber(driverDetail.getCarNumber()) // carNumber maps to vehiclePlateNumber
                 .isVerified(driverDetail.getIsVerified())
+                .rejectionReason(driverDetail.getRejectionReason())
                 
                 // Rating Information
                 .averageRating(averageRating != null ? averageRating : 0.0)

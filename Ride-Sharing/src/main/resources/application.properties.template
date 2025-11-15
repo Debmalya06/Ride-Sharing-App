@@ -18,9 +18,12 @@ jwt.expiration=86400000
 jwt.refreshExpiration=604800000
 
 # Twilio Configuration (Replace with your actual credentials)
-twilio.accountSid=your-twilio-account-sid
-twilio.authToken=your-twilio-auth-token
-twilio.fromNumber=your-twilio-phone-number
+twilio.account.sid=your-twilio-account-sid
+twilio.auth.token=your-twilio-auth-token
+twilio.phone.number=your-twilio-phone-number
+
+# App Base URL (for generating tracking links)
+app.base.url=http://localhost:3000
 
 # Development Settings
 app.mock-otp=true

@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react'
 import { 
   Users, Car, BarChart3, TrendingUp, Eye, Trash2, Check, X, 
-  RefreshCw, Search, AlertTriangle, User, Phone, Mail, Calendar, Star
+  RefreshCw, Search, AlertTriangle, User, Phone, Mail, Calendar, Star, Shield
 } from 'lucide-react'
 import apiService from '../services/api'
 import Loader from './Loader'
+import EmergencyAlertsDashboard from './EmergencyAlertsDashboard'
+import { useToast } from './ToastContext'
 
 // Star Rating Component for displaying ratings
 const StarRating = ({ rating, totalReviews, showCount = true, size = 'sm' }) => {
@@ -59,6 +61,7 @@ const StarRating = ({ rating, totalReviews, showCount = true, size = 'sm' }) => 
 }
 
 const AdminDashboard = ({ user }) => {
+  const toast = useToast()
   const [activeTab, setActiveTab] = useState('overview')
   const [isDashboardLoading, setIsDashboardLoading] = useState(true)
   
@@ -75,6 +78,11 @@ const AdminDashboard = ({ user }) => {
   const [userSearch, setUserSearch] = useState('')
   const [userTypeFilter, setUserTypeFilter] = useState('all')
   const [driverStatusFilter, setDriverStatusFilter] = useState('all')
+
+  // Rejection modal state
+  const [showRejectModal, setShowRejectModal] = useState(false)
+  const [rejectingDriverId, setRejectingDriverId] = useState(null)
+  const [rejectionReason, setRejectionReason] = useState('')
 
   // Pagination states
   const [userCurrentPage, setUserCurrentPage] = useState(1)
@@ -112,6 +120,9 @@ const AdminDashboard = ({ user }) => {
         break
       case 'drivers':
         fetchAllDrivers()
+        break
+      case 'emergency':
+        // Emergency alerts are handled by EmergencyAlertsDashboard component
         break
     }
   }, [activeTab])
@@ -219,15 +230,15 @@ const AdminDashboard = ({ user }) => {
       console.log('Delete user response:', response)
       
       if (response.status === 'SUCCESS') {
-        alert('User deleted successfully')
+        toast.success('User deleted successfully')
         fetchAllUsers() // Refresh the list
       } else {
         console.error('Delete failed with response:', response)
-        alert('Failed to delete user: ' + response.message)
+          toast.error('Failed to delete user: ' + response.message)
       }
     } catch (err) {
       console.error('Error deleting user:', err)
-      alert('Failed to delete user: ' + err.message)
+        toast.error('Failed to delete user: ' + err.message)
     } finally {
       setLoading(false)
     }
@@ -286,49 +297,80 @@ const AdminDashboard = ({ user }) => {
       console.log('Verification response:', response)
       
       if (response.status === 'SUCCESS') {
-        alert(`Driver ${isVerify ? 'verified' : 'rejected'} successfully`)
+        toast.success(`Driver ${isVerify ? 'verified' : 'rejected'} successfully`)
         fetchAllDrivers() // Refresh the list
       } else {
         console.error('Verification failed:', response)
-        alert(`Failed to ${isVerify ? 'verify' : 'reject'} driver: ` + response.message)
+        toast.error(`Failed to ${isVerify ? 'verify' : 'reject'} driver: ` + response.message)
       }
     } catch (err) {
       console.error(`Error ${isVerify ? 'verifying' : 'rejecting'} driver:`, err)
-      alert(`Failed to ${isVerify ? 'verify' : 'reject'} driver: ` + err.message)
+  toast.error(`Failed to ${isVerify ? 'verify' : 'reject'} driver: ` + err.message)
+    } finally {
+      setDriversLoading(false)
+    }
+  }
+
+  const rejectDriverWithReason = async () => {
+    if (!rejectionReason.trim()) {
+      toast.error('Please provide a rejection reason')
+      return
+    }
+
+    try {
+      setDriversLoading(true)
+      console.log('Rejecting driver with ID:', rejectingDriverId, 'Reason:', rejectionReason)
+      
+      const response = await apiService.adminRejectDriverWithReason(rejectingDriverId, rejectionReason)
+      
+      console.log('Rejection response:', response)
+      
+      if (response.status === 'SUCCESS') {
+        toast.success('Driver rejected successfully with reason: ' + rejectionReason)
+        setShowRejectModal(false)
+        setRejectionReason('')
+        setRejectingDriverId(null)
+        fetchAllDrivers() // Refresh the list
+      } else {
+        console.error('Rejection failed:', response)
+        toast.error('Failed to reject driver: ' + response.message)
+      }
+    } catch (err) {
+      console.error('Error rejecting driver:', err)
+  toast.error('Failed to reject driver: ' + err.message)
     } finally {
       setDriversLoading(false)
     }
   }
 
   // Helper function to get verification status
+  // Returns: 1 = Verified, 0 = Rejected, null = Pending
   const getVerificationStatus = (driver) => {
-    // The backend uses 'isVerified' field (Boolean)
+    // Backend data structure:
+    // isVerified = true => Verified (1)
+    // isVerified = false + rejectionReason => Rejected (0)
+    // isVerified = false + no rejectionReason => Pending (null)
+    
     const driverId = driver.userId || driver.driverDetailId || driver.id
-    console.log('Checking verification for driver:', driverId, {
-      isVerified: driver.isVerified,
-      isVerifiedType: typeof driver.isVerified,
-      verified: driver.verified,
-      verifiedType: typeof driver.verified
-    })
     
     let verificationValue = null
     
-    // Primary field is 'isVerified' from DriverDetail entity
-    if (driver.isVerified !== undefined) {
-      verificationValue = driver.isVerified
-    } else if (driver.verified !== undefined) {
-      verificationValue = driver.verified  // fallback
+    // Check if driver is verified
+    if (driver.isVerified === true) {
+      verificationValue = 1 // Verified
+    } else if (driver.isVerified === false && driver.rejectionReason) {
+      verificationValue = 0 // Rejected (has rejection reason)
+    } else {
+      verificationValue = null // Pending (no verification, no rejection reason)
     }
     
-    // Convert boolean to number for consistency
-    if (verificationValue === true) {
-      verificationValue = 1      // Verified
-    } else if (verificationValue === false) {
-      verificationValue = 0      // Rejected
-    }
-    // null/undefined stays as null for Pending
+    console.log('Verification status for driver', driverId, ':', {
+      verificationValue,
+      isVerified: driver.isVerified,
+      rejectionReason: driver.rejectionReason,
+      status: verificationValue === 1 ? 'Verified' : verificationValue === 0 ? 'Rejected' : 'Pending'
+    })
     
-    console.log('Final verification value for driver', driver.id, ':', verificationValue, typeof verificationValue)
     return verificationValue
   }
 
@@ -336,7 +378,7 @@ const AdminDashboard = ({ user }) => {
   const updateStats = (users = allUsers, drivers = allDrivers) => {
     const pendingDrivers = drivers.filter(driver => {
       const status = getVerificationStatus(driver)
-      return status !== 1 && status !== 0 // null, undefined, or any other value means pending
+      return status === null // null = pending
     })
     const verifiedDrivers = drivers.filter(driver => getVerificationStatus(driver) === 1)
     
@@ -367,7 +409,7 @@ const AdminDashboard = ({ user }) => {
     return allDrivers.filter(driver => {
       const status = getVerificationStatus(driver)
       const matchesStatus = driverStatusFilter === 'all' ||
-                           (driverStatusFilter === 'pending' && status !== 1 && status !== 0) || // null/undefined = pending
+                           (driverStatusFilter === 'pending' && status === null) ||
                            (driverStatusFilter === 'verified' && status === 1) ||
                            (driverStatusFilter === 'rejected' && status === 0)
       
@@ -432,79 +474,79 @@ const AdminDashboard = ({ user }) => {
       ) : (
         <>
           {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-white rounded-lg shadow-sm p-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+        <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6">
           <div className="flex items-center">
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <Users className="h-6 w-6 text-blue-600" />
+            <div className="p-2 bg-blue-100 rounded-lg flex-shrink-0">
+              <Users className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
             </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Total Users</p>
-              <p className="text-2xl font-semibold text-gray-900">{stats.totalUsers}</p>
+            <div className="ml-3 sm:ml-4">
+              <p className="text-xs sm:text-sm font-medium text-gray-600">Total Users</p>
+              <p className="text-xl sm:text-2xl font-semibold text-gray-900">{stats.totalUsers}</p>
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm p-6">
+        <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6">
           <div className="flex items-center">
-            <div className="p-2 bg-green-100 rounded-lg">
-              <Car className="h-6 w-6 text-green-600" />
+            <div className="p-2 bg-green-100 rounded-lg flex-shrink-0">
+              <Car className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
             </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Total Drivers</p>
-              <p className="text-2xl font-semibold text-gray-900">{stats.totalDrivers}</p>
+            <div className="ml-3 sm:ml-4">
+              <p className="text-xs sm:text-sm font-medium text-gray-600">Total Drivers</p>
+              <p className="text-xl sm:text-2xl font-semibold text-gray-900">{stats.totalDrivers}</p>
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm p-6">
+        <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6">
           <div className="flex items-center">
-            <div className="p-2 bg-yellow-100 rounded-lg">
-              <AlertTriangle className="h-6 w-6 text-yellow-600" />
+            <div className="p-2 bg-yellow-100 rounded-lg flex-shrink-0">
+              <AlertTriangle className="h-5 w-5 sm:h-6 sm:w-6 text-yellow-600" />
             </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Pending Verifications</p>
-              <p className="text-2xl font-semibold text-gray-900">{stats.pendingVerifications}</p>
+            <div className="ml-3 sm:ml-4">
+              <p className="text-xs sm:text-sm font-medium text-gray-600">Pending Verifications</p>
+              <p className="text-xl sm:text-2xl font-semibold text-gray-900">{stats.pendingVerifications}</p>
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm p-6">
+        <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6">
           <div className="flex items-center">
-            <div className="p-2 bg-purple-100 rounded-lg">
-              <Check className="h-6 w-6 text-purple-600" />
+            <div className="p-2 bg-purple-100 rounded-lg flex-shrink-0">
+              <Check className="h-5 w-5 sm:h-6 sm:w-6 text-purple-600" />
             </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Verified Drivers</p>
-              <p className="text-2xl font-semibold text-gray-900">{stats.verifiedDrivers}</p>
+            <div className="ml-3 sm:ml-4">
+              <p className="text-xs sm:text-sm font-medium text-gray-600">Verified Drivers</p>
+              <p className="text-xl sm:text-2xl font-semibold text-gray-900">{stats.verifiedDrivers}</p>
             </div>
           </div>
         </div>
       </div>
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-8">
         <div className="bg-white rounded-lg shadow-sm">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h3 className="text-lg font-semibold text-gray-900">Quick Actions</h3>
+          <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200">
+            <h3 className="text-base sm:text-lg font-semibold text-gray-900">Quick Actions</h3>
           </div>
-          <div className="p-6">
+          <div className="p-4 sm:p-6">
             <div className="space-y-3">
               <button
                 onClick={() => setActiveTab('users')}
-                className="w-full text-left px-4 py-3 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors"
+                className="w-full text-left px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors"
               >
                 <div className="flex items-center space-x-3">
-                  <Users className="h-5 w-5 text-blue-600" />
+                  <Users className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600 flex-shrink-0" />
                   <span className="font-medium text-blue-800">Manage Users ({stats.totalUsers})</span>
                 </div>
               </button>
               <button
                 onClick={() => setActiveTab('drivers')}
-                className="w-full text-left px-4 py-3 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 transition-colors"
+                className="w-full text-left px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 transition-colors"
               >
                 <div className="flex items-center space-x-3">
-                  <Car className="h-5 w-5 text-green-600" />
+                  <Car className="h-4 w-4 sm:h-5 sm:w-5 text-green-600 flex-shrink-0" />
                   <span className="font-medium text-green-800">Manage Drivers ({stats.totalDrivers})</span>
                 </div>
               </button>
@@ -514,10 +556,10 @@ const AdminDashboard = ({ user }) => {
                     handleTabSwitch('drivers')
                     setDriverStatusFilter('pending')
                   }}
-                  className="w-full text-left px-4 py-3 bg-yellow-50 border border-yellow-200 rounded-lg hover:bg-yellow-100 transition-colors"
+                  className="w-full text-left px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base bg-yellow-50 border border-yellow-200 rounded-lg hover:bg-yellow-100 transition-colors"
                 >
                   <div className="flex items-center space-x-3">
-                    <AlertTriangle className="h-5 w-5 text-yellow-600" />
+                    <AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-600 flex-shrink-0" />
                     <span className="font-medium text-yellow-800">Review Pending ({stats.pendingVerifications})</span>
                   </div>
                 </button>
@@ -527,11 +569,11 @@ const AdminDashboard = ({ user }) => {
         </div>
 
         <div className="bg-white rounded-lg shadow-sm">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h3 className="text-lg font-semibold text-gray-900">Recent Activity</h3>
+          <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200">
+            <h3 className="text-base sm:text-lg font-semibold text-gray-900">Recent Activity</h3>
           </div>
-          <div className="p-6">
-            <div className="space-y-4">
+          <div className="p-4 sm:p-6">
+            <div className="space-y-3 sm:space-y-4">
               <div className="flex items-center space-x-3">
                 <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                 <p className="text-sm text-gray-600">{stats.verifiedDrivers} drivers verified</p>
@@ -571,28 +613,28 @@ const AdminDashboard = ({ user }) => {
         </div>
         
         {/* Search and Filter */}
-        <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
           <div className="relative">
-            <Search className="h-4 w-4 absolute left-3 top-3 text-gray-400" />
+            <Search className="h-3.5 w-3.5 sm:h-4 sm:w-4 absolute left-3 top-2.5 sm:top-3 text-gray-400" />
             <input
               type="text"
               placeholder="Search users..."
               value={userSearch}
               onChange={(e) => setUserSearch(e.target.value)}
-              className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg w-full focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="pl-9 sm:pl-10 pr-3 sm:pr-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg w-full focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
           <select
             value={userTypeFilter}
             onChange={(e) => setUserTypeFilter(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           >
             <option value="all">All Types</option>
             <option value="user">Passengers</option>
             <option value="driver">Drivers</option>
             <option value="admin">Admins</option>
           </select>
-          <div className="text-sm text-gray-600 flex items-center">
+          <div className="text-xs sm:text-sm text-gray-600 flex items-center">
             Total: {getFilteredUsers().length} users
             {getUserTotalPages() > 1 && (
               <span className="ml-2 text-blue-600">
@@ -603,9 +645,9 @@ const AdminDashboard = ({ user }) => {
         </div>
       </div>
       
-      <div className="p-6">
+      <div className="p-4 sm:p-6">
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-3 sm:p-4 mb-4 text-sm sm:text-base">
             <p className="text-red-700">{error}</p>
           </div>
         )}
@@ -621,10 +663,10 @@ const AdminDashboard = ({ user }) => {
                 className="mb-4"
               />
               <div className="text-center">
-                <h4 className="text-lg font-medium text-gray-900 mb-2">
+                <h4 className="text-base sm:text-lg font-medium text-gray-900 mb-2">
                   Fetching User Information
                 </h4>
-                <p className="text-sm text-gray-600">
+                <p className="text-xs sm:text-sm text-gray-600">
                   Please wait while we load all user accounts...
                 </p>
               </div>
@@ -632,32 +674,32 @@ const AdminDashboard = ({ user }) => {
           </div>
         ) : getPaginatedUsers().length === 0 ? (
           <div className="text-center py-8 text-gray-500">
-            <Users className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-            <p>No users found</p>
+            <Users className="h-10 w-10 sm:h-12 sm:w-12 mx-auto mb-4 text-gray-300" />
+            <p className="text-sm sm:text-base">No users found</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
+          <div className="overflow-x-auto -mx-4 sm:mx-0">
+            <table className="w-full min-w-max">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Phone</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Role</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                  <th className="px-3 sm:px-4 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
+                  <th className="px-3 sm:px-4 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
+                  <th className="px-3 sm:px-4 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
+                  <th className="px-3 sm:px-4 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase">Phone</th>
+                  <th className="px-3 sm:px-4 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase">Role</th>
+                  <th className="px-3 sm:px-4 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {getPaginatedUsers().map((user) => (
                   <tr key={user.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 text-sm font-medium text-gray-900">#{user.id}</td>
-                    <td className="px-4 py-3 text-sm font-medium text-gray-900">
+                    <td className="px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm font-medium text-gray-900">#{user.id}</td>
+                    <td className="px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm font-medium text-gray-900">
                       {user.firstName} {user.lastName}
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-600">{user.email}</td>
-                    <td className="px-4 py-3 text-sm text-gray-600">{user.phoneNumber}</td>
-                    <td className="px-4 py-3 text-sm">
+                    <td className="px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm text-gray-600 truncate max-w-[150px] sm:max-w-none">{user.email}</td>
+                    <td className="px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm text-gray-600">{user.phoneNumber}</td>
+                    <td className="px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm">
                       <span className={`px-2 py-1 text-xs rounded-full ${
                         user.role === 'DRIVER' 
                           ? 'bg-green-100 text-green-800'
@@ -668,18 +710,18 @@ const AdminDashboard = ({ user }) => {
                         {user.role}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-sm">
+                    <td className="px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm">
                       <div className="flex space-x-2">
                         <button
                           onClick={() => {
                             console.log('Delete button clicked for user:', user)
                             deleteUser(user.id)
                           }}
-                          className="text-red-600 hover:text-red-800"
+                          className="text-red-600 hover:text-red-800 p-1"
                           title="Delete User"
                           disabled={loading}
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <Trash2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                         </button>
                       </div>
                     </td>
@@ -707,31 +749,31 @@ const AdminDashboard = ({ user }) => {
   const renderDriversTab = () => (
     <div className="bg-white rounded-lg shadow-sm">
       <div className="px-6 py-4 border-b border-gray-200">
-        <div className="flex justify-between items-center">
-          <h3 className="text-lg font-semibold text-gray-900">Driver Management</h3>
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+          <h3 className="text-base sm:text-lg font-semibold text-gray-900">Driver Management</h3>
           <button
             onClick={fetchAllDrivers}
             disabled={driversLoading}
-            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 text-sm font-medium flex items-center space-x-2"
+            className="px-3 sm:px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 text-xs sm:text-sm font-medium flex items-center justify-center sm:justify-start space-x-2"
           >
-            <RefreshCw className={`h-4 w-4 ${driversLoading ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`h-3.5 w-3.5 sm:h-4 sm:w-4 ${driversLoading ? 'animate-spin' : ''}`} />
             <span>{driversLoading ? 'Loading...' : 'Refresh'}</span>
           </button>
         </div>
         
         {/* Filter */}
-        <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
           <select
             value={driverStatusFilter}
             onChange={(e) => setDriverStatusFilter(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           >
             <option value="all">All Drivers</option>
             <option value="pending">Pending Verification</option>
             <option value="verified">Verified</option>
             <option value="rejected">Rejected</option>
           </select>
-          <div className="text-sm text-gray-600 flex items-center">
+          <div className="text-xs sm:text-sm text-gray-600 flex items-center">
             Total: {getFilteredDrivers().length} drivers
             {getDriverTotalPages() > 1 && (
               <span className="ml-2 text-blue-600">
@@ -739,18 +781,18 @@ const AdminDashboard = ({ user }) => {
               </span>
             )}
           </div>
-          <div className="text-sm text-gray-600 flex items-center">
+          <div className="text-xs sm:text-sm text-gray-600 flex items-center">
             Pending: {allDrivers.filter(d => {
               const status = getVerificationStatus(d)
-              return status !== 1 && status !== 0 // null/undefined = pending
+              return status === null // null = pending
             }).length}
           </div>
         </div>
       </div>
       
-      <div className="p-6">
+      <div className="p-4 sm:p-6">
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-3 sm:p-4 mb-4 text-sm sm:text-base">
             <p className="text-red-700">{error}</p>
           </div>
         )}
@@ -766,10 +808,10 @@ const AdminDashboard = ({ user }) => {
                 className="mb-4"
               />
               <div className="text-center">
-                <h4 className="text-lg font-medium text-gray-900 mb-2">
+                <h4 className="text-base sm:text-lg font-medium text-gray-900 mb-2">
                   Fetching Driver Information
                 </h4>
-                <p className="text-sm text-gray-600">
+                <p className="text-xs sm:text-sm text-gray-600">
                   Please wait while we load all driver details and ratings...
                 </p>
               </div>
@@ -777,49 +819,49 @@ const AdminDashboard = ({ user }) => {
           </div>
         ) : getPaginatedDrivers().length === 0 ? (
           <div className="text-center py-8 text-gray-500">
-            <Car className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-            <p>No drivers found</p>
+            <Car className="h-10 w-10 sm:h-12 sm:w-12 mx-auto mb-4 text-gray-300" />
+            <p className="text-sm sm:text-base">No drivers found</p>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             {getPaginatedDrivers().map((driver) => (
-              <div key={driver.id || driver.driverDetailId} className="border border-gray-200 rounded-lg p-6">
-                <div className="flex justify-between items-start">
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-6 flex-1">
+              <div key={driver.id || driver.driverDetailId} className="border border-gray-200 rounded-lg p-4 sm:p-6">
+                <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 flex-1">
                     {/* Driver Info */}
                     <div>
-                      <h4 className="font-medium text-gray-900 mb-2">Driver Information</h4>
-                      <div className="space-y-2 text-sm">
+                      <h4 className="font-medium text-sm sm:text-base text-gray-900 mb-2">Driver Information</h4>
+                      <div className="space-y-1.5 sm:space-y-2 text-xs sm:text-sm">
                         <div className="flex items-center space-x-2">
-                          <User className="h-4 w-4 text-gray-400" />
-                          <span>{driver.firstName || driver.user?.firstName} {driver.lastName || driver.user?.lastName}</span>
+                          <User className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-gray-400 flex-shrink-0" />
+                          <span className="truncate">{driver.firstName || driver.user?.firstName} {driver.lastName || driver.user?.lastName}</span>
                         </div>
                         <div className="flex items-center space-x-2">
-                          <Phone className="h-4 w-4 text-gray-400" />
+                          <Phone className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-gray-400 flex-shrink-0" />
                           <span>{driver.phoneNumber || driver.user?.phoneNumber}</span>
                         </div>
                         <div className="flex items-center space-x-2">
-                          <Mail className="h-4 w-4 text-gray-400" />
-                          <span>{driver.email || driver.user?.email}</span>
+                          <Mail className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-gray-400 flex-shrink-0" />
+                          <span className="truncate">{driver.email || driver.user?.email}</span>
                         </div>
                       </div>
                     </div>
 
                     {/* License Info */}
                     <div>
-                      <h4 className="font-medium text-gray-900 mb-2">License Details</h4>
-                      <div className="space-y-1 text-sm text-gray-600">
-                        <p><strong>License:</strong> {driver.licenseNumber}</p>
+                      <h4 className="font-medium text-sm sm:text-base text-gray-900 mb-2">License Details</h4>
+                      <div className="space-y-1 text-xs sm:text-sm text-gray-600">
+                        <p className="truncate"><strong>License:</strong> {driver.licenseNumber}</p>
                         <p><strong>Expiry:</strong> {driver.licenseExpiry || 'N/A'}</p>
-                        <p><strong>Insurance:</strong> {driver.insuranceNumber || 'N/A'}</p>
+                        <p className="truncate"><strong>Insurance:</strong> {driver.insuranceNumber || 'N/A'}</p>
                       </div>
                     </div>
 
                     {/* Vehicle Info */}
                     <div>
-                      <h4 className="font-medium text-gray-900 mb-2">Vehicle Details</h4>
-                      <div className="space-y-1 text-sm text-gray-600">
-                        <p><strong>Model:</strong> {driver.vehicleModel || driver.carModel}</p>
+                      <h4 className="font-medium text-sm sm:text-base text-gray-900 mb-2">Vehicle Details</h4>
+                      <div className="space-y-1 text-xs sm:text-sm text-gray-600">
+                        <p className="truncate"><strong>Model:</strong> {driver.vehicleModel || driver.carModel}</p>
                         <p><strong>Number:</strong> {driver.vehiclePlateNumber || driver.carNumber}</p>
                         <p><strong>Year:</strong> {driver.vehicleYear || driver.carYear}</p>
                         <p><strong>Color:</strong> {driver.vehicleColor || driver.carColor}</p>
@@ -828,7 +870,7 @@ const AdminDashboard = ({ user }) => {
 
                     {/* Rating Info */}
                     <div>
-                      <h4 className="font-medium text-gray-900 mb-2">Driver Rating</h4>
+                      <h4 className="font-medium text-sm sm:text-base text-gray-900 mb-2">Driver Rating</h4>
                       <div className="space-y-2">
                         <StarRating 
                           rating={driver.averageRating || 0} 
@@ -864,9 +906,9 @@ const AdminDashboard = ({ user }) => {
                   </div>
 
                   {/* Status and Actions */}
-                  <div className="ml-6 text-right">
-                    <div className="mb-4">
-                      <span className={`px-3 py-1 text-sm rounded-full ${
+                  <div className="lg:ml-6 mt-4 lg:mt-0 flex lg:flex-col items-start lg:items-end gap-3 lg:gap-0">
+                    <div className="mb-0 lg:mb-4 flex flex-col items-start lg:items-end gap-1">
+                      <span className={`px-2.5 sm:px-3 py-1 text-xs sm:text-sm rounded-full ${
                         getVerificationStatus(driver) === 1
                           ? 'bg-green-100 text-green-800'
                           : getVerificationStatus(driver) === 0
@@ -875,25 +917,34 @@ const AdminDashboard = ({ user }) => {
                       }`}>
                         {getVerificationStatus(driver) === 1 ? 'Verified' : getVerificationStatus(driver) === 0 ? 'Rejected' : 'Pending'}
                       </span>
+                      {getVerificationStatus(driver) === 0 && driver.rejectionReason && (
+                        <span className="text-xs text-red-600 max-w-xs text-right">
+                          Reason: {driver.rejectionReason}
+                        </span>
+                      )}
                     </div>
 
                     {/* Action Buttons */}
                     {getVerificationStatus(driver) !== 1 && (
-                      <div className="space-y-2">
+                      <div className="flex lg:flex-col gap-2 lg:space-y-2 w-full lg:w-auto">
                         <button
                           onClick={() => verifyDriver(driver.driverDetailId || driver.id, true)}
                           disabled={driversLoading}
-                          className="w-full px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:opacity-50 text-sm font-medium flex items-center justify-center space-x-2"
+                          className="flex-1 lg:w-full px-3 sm:px-4 py-1.5 sm:py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:opacity-50 text-xs sm:text-sm font-medium flex items-center justify-center space-x-2"
                         >
-                          <Check className="h-4 w-4" />
+                          <Check className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                           <span>Verify</span>
                         </button>
                         <button
-                          onClick={() => verifyDriver(driver.driverDetailId || driver.id, false)}
+                          onClick={() => {
+                            setRejectingDriverId(driver.driverDetailId || driver.id)
+                            setShowRejectModal(true)
+                            setRejectionReason('')
+                          }}
                           disabled={driversLoading}
-                          className="w-full px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 disabled:opacity-50 text-sm font-medium flex items-center justify-center space-x-2"
+                          className="flex-1 lg:w-full px-3 sm:px-4 py-1.5 sm:py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 disabled:opacity-50 text-xs sm:text-sm font-medium flex items-center justify-center space-x-2"
                         >
-                          <X className="h-4 w-4" />
+                          <X className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                           <span>Reject</span>
                         </button>
                       </div>
@@ -924,10 +975,10 @@ const AdminDashboard = ({ user }) => {
       {/* Header */}
       <div className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
+          <div className="flex justify-between items-center py-4 sm:py-6">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
-              <p className="text-sm text-gray-500">Welcome back, {user?.firstName || 'Admin'}</p>
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Admin Dashboard</h1>
+              <p className="text-xs sm:text-sm text-gray-500">Welcome back, {user?.firstName || 'Admin'}</p>
             </div>
           </div>
         </div>
@@ -936,51 +987,65 @@ const AdminDashboard = ({ user }) => {
       {/* Navigation Tabs */}
       <div className="bg-white border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <nav className="flex space-x-8">
+          <nav className="flex overflow-x-auto space-x-4 sm:space-x-8 scrollbar-hide">
             <button
               onClick={() => handleTabSwitch('overview')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm ${
+              className={`py-3 sm:py-4 px-1 border-b-2 font-medium text-xs sm:text-sm whitespace-nowrap ${
                 activeTab === 'overview'
                   ? 'border-blue-500 text-blue-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
               <div className="flex items-center space-x-2">
-                <BarChart3 className="h-4 w-4" />
+                <BarChart3 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 <span>Overview</span>
               </div>
             </button>
 
             <button
               onClick={() => handleTabSwitch('users')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm ${
+              className={`py-3 sm:py-4 px-1 border-b-2 font-medium text-xs sm:text-sm whitespace-nowrap ${
                 activeTab === 'users'
                   ? 'border-blue-500 text-blue-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
               <div className="flex items-center space-x-2">
-                <Users className="h-4 w-4" />
-                <span>All Users ({stats.totalUsers})</span>
+                <Users className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                <span className="hidden sm:inline">All </span>Users<span className="hidden sm:inline"> ({stats.totalUsers})</span>
               </div>
             </button>
 
             <button
               onClick={() => handleTabSwitch('drivers')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm ${
+              className={`py-3 sm:py-4 px-1 border-b-2 font-medium text-xs sm:text-sm whitespace-nowrap ${
                 activeTab === 'drivers'
                   ? 'border-blue-500 text-blue-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
               <div className="flex items-center space-x-2">
-                <Car className="h-4 w-4" />
-                <span>All Drivers ({stats.totalDrivers})</span>
+                <Car className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                <span className="hidden sm:inline">All </span>Drivers<span className="hidden sm:inline"> ({stats.totalDrivers})</span>
                 {stats.pendingVerifications > 0 && (
-                  <span className="bg-red-500 text-white text-xs rounded-full px-2 py-1 ml-1">
+                  <span className="bg-red-500 text-white text-xs rounded-full px-1.5 sm:px-2 py-0.5 sm:py-1 ml-1">
                     {stats.pendingVerifications}
                   </span>
                 )}
+              </div>
+            </button>
+
+            <button
+              onClick={() => handleTabSwitch('emergency')}
+              className={`py-3 sm:py-4 px-1 border-b-2 font-medium text-xs sm:text-sm whitespace-nowrap ${
+                activeTab === 'emergency'
+                  ? 'border-red-500 text-red-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              <div className="flex items-center space-x-2">
+                <Shield className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                <span>Emergency Alerts</span>
               </div>
             </button>
           </nav>
@@ -998,11 +1063,74 @@ const AdminDashboard = ({ user }) => {
       )}
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
         {activeTab === 'overview' && renderOverviewTab()}
         {activeTab === 'users' && renderUsersTab()}
         {activeTab === 'drivers' && renderDriversTab()}
+        {activeTab === 'emergency' && <EmergencyAlertsDashboard />}
       </div>
+
+      {/* Rejection Reason Modal */}
+      {showRejectModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-lg max-w-md w-full p-6">
+            <div className="mb-4">
+              <h2 className="text-xl font-bold text-gray-900 mb-2">Reject Driver</h2>
+              <p className="text-sm text-gray-600">
+                Please provide a reason for rejecting this driver's verification request. This reason will be recorded in the system.
+              </p>
+            </div>
+
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Rejection Reason <span className="text-red-500">*</span>
+              </label>
+              <textarea
+                value={rejectionReason}
+                onChange={(e) => setRejectionReason(e.target.value)}
+                placeholder="E.g., Invalid license number, Suspicious vehicle details, Expired insurance..."
+                rows="4"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent resize-none"
+                maxLength="500"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                {rejectionReason.length}/500 characters
+              </p>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowRejectModal(false)
+                  setRejectionReason('')
+                  setRejectingDriverId(null)
+                }}
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50"
+                disabled={driversLoading}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={rejectDriverWithReason}
+                className="flex-1 px-4 py-2 bg-red-500 text-white rounded-lg font-medium hover:bg-red-600 disabled:opacity-50 flex items-center justify-center space-x-2"
+                disabled={driversLoading || !rejectionReason.trim()}
+              >
+                {driversLoading ? (
+                  <>
+                    <RefreshCw className="h-4 w-4 animate-spin" />
+                    <span>Rejecting...</span>
+                  </>
+                ) : (
+                  <>
+                    <X className="h-4 w-4" />
+                    <span>Confirm Rejection</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

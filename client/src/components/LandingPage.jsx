@@ -68,17 +68,17 @@ const LandingPage = () => {
     <div className="min-h-screen">
       {/* Initial Page Loading */}
       {isPageLoading && (
-        <div className="fixed inset-0 bg-gradient-to-br from-yellow-50 to-orange-50 flex flex-col items-center justify-center z-50">
+        <div className="fixed inset-0 bg-gradient-to-br from-yellow-50 to-orange-50 flex flex-col items-center justify-center z-50 px-4">
           <Loader 
-            size={280}
+            size={200}
             showText={false}
-            className="mb-8"
+            className="mb-6 sm:mb-8"
           />
-          <div className="text-center max-w-lg mx-auto px-4">
-            <h1 className="text-4xl font-bold text-gray-900 mb-4">
+          <div className="text-center max-w-lg mx-auto">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-3 sm:mb-4">
               Welcome to <span className="text-yellow-500">SmartRide</span>
             </h1>
-            <p className="text-xl text-yellow-600 font-me dium mb-2 animate-pulse">
+            <p className="text-base sm:text-lg md:text-xl text-yellow-600 font-medium mb-2 animate-pulse">
               {quotes[currentQuote]}
             </p>
             <div className="flex justify-center space-x-2 mt-6">
@@ -91,204 +91,192 @@ const LandingPage = () => {
                 />
               ))}
             </div>
-            <p className="text-sm text-gray-500 mt-4">Loading your journey...</p>
+            <p className="text-xs sm:text-sm text-gray-500 mt-4">Loading your journey...</p>
           </div>
         </div>
       )}
 
       {/* Hero Section */}
-      <section className="bg-gradient-to-br from-yellow-50 to-orange-50 py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            {/* Left Content */}
-            <div className="space-y-8" data-aos="fade-right" data-aos-delay="100">
-              <h1 className="text-4xl md:text-6xl font-bold text-gray-900 leading-tight" data-aos="fade-up" data-aos-delay="200">
-                Share Your Journey,{' '}
-                <span className="text-yellow-500">Save Money</span>
-              </h1>
-              <p className="text-lg md:text-xl text-gray-600 leading-relaxed" data-aos="fade-up" data-aos-delay="300">
-                Connect with fellow travelers heading in the same direction. Split costs, reduce emissions, and make new connections on every trip.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4" data-aos="fade-up" data-aos-delay="400">
-                <button
-                  onClick={() => handleSignUpClick('passenger')}
-                  disabled={isLoading}
-                  className="bg-yellow-500 hover:bg-yellow-600 text-white px-8 py-4 rounded-lg font-semibold text-lg transition-all duration-200 hover:shadow-lg text-center transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Find a Ride
-                </button>
-                <button
-                  onClick={() => handleSignUpClick('driver')}
-                  disabled={isLoading}
-                  className="border-2 border-yellow-500 text-yellow-600 hover:bg-yellow-500 hover:text-white px-8 py-4 rounded-lg font-semibold text-lg transition-all duration-200 text-center transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Offer a Ride
-                </button>
-              </div>
-            </div>
-
-            {/* Right Content - Hero Animation */}
-            <div className="relative" data-aos="fade-left" data-aos-delay="200">
-              <div className="rounded-2xl overflow-hidden shadow-2xl transform hover:scale-105 transition-transform duration-300 bg-yellow-500">
-                <DotLottieReact
-                  src="https://lottie.host/17b071fc-6b6b-4e5f-ba2e-50416292af41/OZz2D8EmxL.lottie"
-                  loop
-                  autoplay
-                  className="w-full h-auto object-cover"
-                />
-              </div>
-              
-              {/* Floating Card */}
-              {/* <div className="absolute -bottom-6 -left-6 bg-white rounded-2xl p-6 shadow-xl border-l-4 border-yellow-500">
-                <div className="flex items-center space-x-4">
-                  <div className="bg-yellow-100 p-3 rounded-full">
-                    <Users className="h-6 w-6 text-yellow-600" />
-                  </div>
-                  <div>
-                    <div className="font-semibold text-gray-900">Mumbai → Pune</div>
-                    <div className="text-gray-500">Today, 2:00 PM</div>
-                    <div className="text-right">
-                      <span className="text-lg font-bold text-yellow-600">₹450</span>
-                      <span className="text-gray-500 text-sm ml-1">per seat</span>
-                    </div>
-                  </div>
+      <section className="bg-gradient-to-br from-yellow-50 to-orange-50 py-8 sm:py-12 md:py-16 lg:py-20 w-full">
+        <div className="w-full px-0 sm:px-0">
+          <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 md:gap-8 lg:gap-12 items-center">
+              {/* Left Content */}
+              <div className="space-y-3 sm:space-y-4 md:space-y-6" data-aos="fade-right" data-aos-delay="100">
+                <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold text-gray-900 leading-tight" data-aos="fade-up" data-aos-delay="200">
+                  Share Your Journey,{' '}
+                  <span className="text-yellow-500">Save Money</span>
+                </h1>
+                <p className="text-sm sm:text-base md:text-lg lg:text-xl text-gray-600 leading-relaxed" data-aos="fade-up" data-aos-delay="300">
+                  Connect with fellow travelers heading in the same direction. Split costs, reduce emissions, and make new connections on every trip.
+                </p>
+                <div className="flex flex-col xs:flex-col sm:flex-row gap-2 sm:gap-3 md:gap-4 pt-2" data-aos="fade-up" data-aos-delay="400">
+                  <button
+                    onClick={() => handleSignUpClick('passenger')}
+                    disabled={isLoading}
+                    className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 sm:px-6 md:px-8 py-2.5 sm:py-3 md:py-4 rounded-lg font-semibold text-sm sm:text-base md:text-lg transition-all duration-200 hover:shadow-lg text-center transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto"
+                  >
+                    Find a Ride
+                  </button>
+                  <button
+                    onClick={() => handleSignUpClick('driver')}
+                    disabled={isLoading}
+                    className="border-2 border-yellow-500 text-yellow-600 hover:bg-yellow-500 hover:text-white px-4 sm:px-6 md:px-8 py-2.5 sm:py-3 md:py-4 rounded-lg font-semibold text-sm sm:text-base md:text-lg transition-all duration-200 text-center transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto"
+                  >
+                    Offer a Ride
+                  </button>
                 </div>
-              </div> */}
+              </div>
+
+              {/* Right Content - Hero Animation */}
+              <div className="relative hidden sm:block" data-aos="fade-left" data-aos-delay="200">
+                <div className="rounded-2xl overflow-hidden shadow-2xl transform hover:scale-105 transition-transform duration-300 bg-yellow-500">
+                  <DotLottieReact
+                    src="https://lottie.host/17b071fc-6b6b-4e5f-ba2e-50416292af41/OZz2D8EmxL.lottie"
+                    loop
+                    autoplay
+                    className="w-full h-auto object-cover"
+                  />
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
       {/* Features Section */}
-      <section id="features" className="py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16" data-aos="fade-up">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4" data-aos="fade-up" data-aos-delay="100">
-              Why Choose SmartRide?
-            </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto" data-aos="fade-up" data-aos-delay="200">
-              Experience the future of ride-sharing with our comprehensive platform designed for safety, convenience, and affordability.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {/* Feature 1 */}
-            <div className="bg-white p-8 rounded-2xl shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2" data-aos="fade-up" data-aos-delay="100">
-              <div className="bg-yellow-100 w-16 h-16 rounded-full flex items-center justify-center mb-6 transform transition-transform duration-300 hover:scale-110">
-                <Shield className="h-8 w-8 text-yellow-600" />
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-4">Verified Drivers</h3>
-              <p className="text-gray-600">
-                All drivers are verified with valid licenses and vehicle documents for your safety.
+      <section id="features" className="py-8 sm:py-12 md:py-16 lg:py-20 bg-white w-full">
+        <div className="w-full px-0">
+          <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
+            <div className="text-center mb-6 sm:mb-8 md:mb-12 lg:mb-16" data-aos="fade-up">
+              <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-gray-900 mb-2 sm:mb-3 md:mb-4" data-aos="fade-up" data-aos-delay="100">
+                Why Choose SmartRide?
+              </h2>
+              <p className="text-xs sm:text-sm md:text-base lg:text-lg text-gray-600 max-w-3xl mx-auto px-1" data-aos="fade-up" data-aos-delay="200">
+                Experience the future of ride-sharing with our comprehensive platform designed for safety, convenience, and affordability.
               </p>
             </div>
 
-            {/* Feature 2 */}
-            <div className="bg-white p-8 rounded-2xl shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2" data-aos="fade-up" data-aos-delay="200">
-              <div className="bg-yellow-100 w-16 h-16 rounded-full flex items-center justify-center mb-6 transform transition-transform duration-300 hover:scale-110">
-                <CreditCard className="h-8 w-8 text-yellow-600" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-6">
+              {/* Feature 1 */}
+              <div className="bg-white p-3 sm:p-4 md:p-6 rounded-xl sm:rounded-2xl shadow-md hover:shadow-lg border border-gray-100 transition-all duration-300 transform hover:-translate-y-1 sm:hover:-translate-y-2" data-aos="fade-up" data-aos-delay="100">
+                <div className="bg-yellow-100 w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 rounded-full flex items-center justify-center mb-3 sm:mb-4 md:mb-6 transform transition-transform duration-300 hover:scale-110">
+                  <Shield className="h-6 w-6 sm:h-7 sm:w-7 md:h-8 md:w-8 text-yellow-600" />
+                </div>
+                <h3 className="text-base sm:text-lg md:text-xl font-semibold text-gray-900 mb-1 sm:mb-2 md:mb-3">Verified Drivers</h3>
+                <p className="text-xs sm:text-sm md:text-base text-gray-600 leading-relaxed">
+                  All drivers are verified with valid licenses and vehicle documents for your safety.
+                </p>
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-4">Secure Payments</h3>
-              <p className="text-gray-600">
-                Safe and secure payment processing with multiple payment options available.
-              </p>
-            </div>
 
-            {/* Feature 3 */}
-            <div className="bg-white p-8 rounded-2xl shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2" data-aos="fade-up" data-aos-delay="300">
-              <div className="bg-yellow-100 w-16 h-16 rounded-full flex items-center justify-center mb-6 transform transition-transform duration-300 hover:scale-110">
-                <MapPin className="h-8 w-8 text-yellow-600" />
+              {/* Feature 2 */}
+              <div className="bg-white p-3 sm:p-4 md:p-6 rounded-xl sm:rounded-2xl shadow-md hover:shadow-lg border border-gray-100 transition-all duration-300 transform hover:-translate-y-1 sm:hover:-translate-y-2" data-aos="fade-up" data-aos-delay="200">
+                <div className="bg-yellow-100 w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 rounded-full flex items-center justify-center mb-3 sm:mb-4 md:mb-6 transform transition-transform duration-300 hover:scale-110">
+                  <CreditCard className="h-6 w-6 sm:h-7 sm:w-7 md:h-8 md:w-8 text-yellow-600" />
+                </div>
+                <h3 className="text-base sm:text-lg md:text-xl font-semibold text-gray-900 mb-1 sm:mb-2 md:mb-3">Secure Payments</h3>
+                <p className="text-xs sm:text-sm md:text-base text-gray-600 leading-relaxed">
+                  Safe and secure payment processing with multiple payment options available.
+                </p>
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-4">Smart Matching</h3>
-              <p className="text-gray-600">
-                Advanced algorithm matches you with rides based on your route and preferences.
-              </p>
-            </div>
 
-            {/* Feature 4 */}
-            <div className="bg-white p-8 rounded-2xl shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2" data-aos="fade-up" data-aos-delay="100">
-              <div className="bg-yellow-100 w-16 h-16 rounded-full flex items-center justify-center mb-6 transform transition-transform duration-300 hover:scale-110">
-                <Clock className="h-8 w-8 text-yellow-600" />
+              {/* Feature 3 */}
+              <div className="bg-white p-3 sm:p-4 md:p-6 rounded-xl sm:rounded-2xl shadow-md hover:shadow-lg border border-gray-100 transition-all duration-300 transform hover:-translate-y-1 sm:hover:-translate-y-2" data-aos="fade-up" data-aos-delay="300">
+                <div className="bg-yellow-100 w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 rounded-full flex items-center justify-center mb-3 sm:mb-4 md:mb-6 transform transition-transform duration-300 hover:scale-110">
+                  <MapPin className="h-6 w-6 sm:h-7 sm:w-7 md:h-8 md:w-8 text-yellow-600" />
+                </div>
+                <h3 className="text-base sm:text-lg md:text-xl font-semibold text-gray-900 mb-1 sm:mb-2 md:mb-3">Smart Matching</h3>
+                <p className="text-xs sm:text-sm md:text-base text-gray-600 leading-relaxed">
+                  Advanced algorithm matches you with rides based on your route and preferences.
+                </p>
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-4">Real-time Tracking</h3>
-              <p className="text-gray-600">
-                Track your ride in real-time and get updates on your journey progress.
-              </p>
-            </div>
 
-            {/* Feature 5 */}
-            <div className="bg-white p-8 rounded-2xl shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2" data-aos="fade-up" data-aos-delay="200">
-              <div className="bg-yellow-100 w-16 h-16 rounded-full flex items-center justify-center mb-6 transform transition-transform duration-300 hover:scale-110">
-                <Users className="h-8 w-8 text-yellow-600" />
+              {/* Feature 4 */}
+              <div className="bg-white p-3 sm:p-4 md:p-6 rounded-xl sm:rounded-2xl shadow-md hover:shadow-lg border border-gray-100 transition-all duration-300 transform hover:-translate-y-1 sm:hover:-translate-y-2" data-aos="fade-up" data-aos-delay="100">
+                <div className="bg-yellow-100 w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 rounded-full flex items-center justify-center mb-3 sm:mb-4 md:mb-6 transform transition-transform duration-300 hover:scale-110">
+                  <Clock className="h-6 w-6 sm:h-7 sm:w-7 md:h-8 md:w-8 text-yellow-600" />
+                </div>
+                <h3 className="text-base sm:text-lg md:text-xl font-semibold text-gray-900 mb-1 sm:mb-2 md:mb-3">Real-time Tracking</h3>
+                <p className="text-xs sm:text-sm md:text-base text-gray-600 leading-relaxed">
+                  Track your ride in real-time and get updates on your journey progress.
+                </p>
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-4">User Reviews</h3>
-              <p className="text-gray-600">
-                Rate and review your travel experience to help build a trusted community.
-              </p>
-            </div>
 
-            {/* Feature 6 */}
-            <div className="bg-white p-8 rounded-2xl shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2" data-aos="fade-up" data-aos-delay="300">
-              <div className="bg-yellow-100 w-16 h-16 rounded-full flex items-center justify-center mb-6 transform transition-transform duration-300 hover:scale-110">
-                <Briefcase className="h-8 w-8 text-yellow-600" />
+              {/* Feature 5 */}
+              <div className="bg-white p-3 sm:p-4 md:p-6 rounded-xl sm:rounded-2xl shadow-md hover:shadow-lg border border-gray-100 transition-all duration-300 transform hover:-translate-y-1 sm:hover:-translate-y-2" data-aos="fade-up" data-aos-delay="200">
+                <div className="bg-yellow-100 w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 rounded-full flex items-center justify-center mb-3 sm:mb-4 md:mb-6 transform transition-transform duration-300 hover:scale-110">
+                  <Users className="h-6 w-6 sm:h-7 sm:w-7 md:h-8 md:w-8 text-yellow-600" />
+                </div>
+                <h3 className="text-base sm:text-lg md:text-xl font-semibold text-gray-900 mb-1 sm:mb-2 md:mb-3">User Reviews</h3>
+                <p className="text-xs sm:text-sm md:text-base text-gray-600 leading-relaxed">
+                  Rate and review your travel experience to help build a trusted community.
+                </p>
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-4">Flexible Booking</h3>
-              <p className="text-gray-600">
-                Book rides instantly or schedule them in advance for your convenience.
-              </p>
+
+              {/* Feature 6 */}
+              <div className="bg-white p-3 sm:p-4 md:p-6 rounded-xl sm:rounded-2xl shadow-md hover:shadow-lg border border-gray-100 transition-all duration-300 transform hover:-translate-y-1 sm:hover:-translate-y-2" data-aos="fade-up" data-aos-delay="300">
+                <div className="bg-yellow-100 w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 rounded-full flex items-center justify-center mb-3 sm:mb-4 md:mb-6 transform transition-transform duration-300 hover:scale-110">
+                  <Briefcase className="h-6 w-6 sm:h-7 sm:w-7 md:h-8 md:w-8 text-yellow-600" />
+                </div>
+                <h3 className="text-base sm:text-lg md:text-xl font-semibold text-gray-900 mb-1 sm:mb-2 md:mb-3">Flexible Booking</h3>
+                <p className="text-xs sm:text-sm md:text-base text-gray-600 leading-relaxed">
+                  Book rides instantly or schedule them in advance for your convenience.
+                </p>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
       {/* How It Works Section */}
-      <section id="how-it-works" className="py-20 bg-gray-50">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16" data-aos="fade-up">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4" data-aos="fade-up" data-aos-delay="100">
-              How SmartRide Works
-            </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto" data-aos="fade-up" data-aos-delay="200">
-              Getting started with SmartRide is simple. Follow these easy steps to begin your ride-sharing journey.
-            </p>
-          </div>
+      <section id="how-it-works" className="py-8 sm:py-12 md:py-16 lg:py-20 bg-gray-50 w-full">
+        <div className="w-full px-0">
+          <div className="max-w-5xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
+            <div className="text-center mb-6 sm:mb-8 md:mb-12 lg:mb-16" data-aos="fade-up">
+              <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-gray-900 mb-2 sm:mb-3 md:mb-4" data-aos="fade-up" data-aos-delay="100">
+                How SmartRide Works
+              </h2>
+              <p className="text-xs sm:text-sm md:text-base lg:text-lg text-gray-600 max-w-3xl mx-auto px-1" data-aos="fade-up" data-aos-delay="200">
+                Getting started with SmartRide is simple. Follow these easy steps to begin your ride-sharing journey.
+              </p>
+            </div>
 
-          <div className="space-y-16">
-            {/* Step 1 - Sign Up */}
-            <div className="flex flex-col lg:flex-row items-center gap-12">
-              <div className="lg:w-1/2" data-aos="fade-right" data-aos-delay="100">
+            <div className="space-y-8 sm:space-y-10 md:space-y-12 lg:space-y-16">
+              {/* Step 1 - Sign Up */}
+            <div className="flex flex-col lg:flex-row items-center gap-6 sm:gap-8 md:gap-12">
+              <div className="w-full lg:w-1/2" data-aos="fade-right" data-aos-delay="100">
                 <div className="relative">
                   <img
                     src="sign.jpg"
                     alt="Person signing up on mobile phone"
-                    className="w-full h-80 object-cover rounded-2xl shadow-lg transform hover:scale-105 transition-transform duration-300"
+                    className="w-full h-56 sm:h-72 md:h-80 object-cover rounded-2xl shadow-lg transform hover:scale-105 transition-transform duration-300"
                   />
-                  <div className="absolute -top-4 -left-4 bg-yellow-500 text-white w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold shadow-lg animate-pulse">
+                  <div className="absolute -top-3 sm:-top-4 -left-3 sm:-left-4 bg-yellow-500 text-white w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center text-xl sm:text-2xl font-bold shadow-lg animate-pulse">
                     01
                   </div>
                 </div>
               </div>
-              <div className="lg:w-1/2 space-y-6" data-aos="fade-left" data-aos-delay="200">
-                <div className="flex items-center gap-4">
-                  <div className="bg-yellow-100 p-4 rounded-full transform hover:scale-110 transition-transform duration-300">
-                    <Users className="h-8 w-8 text-yellow-600" />
+              <div className="w-full lg:w-1/2 space-y-4 sm:space-y-6" data-aos="fade-left" data-aos-delay="200">
+                <div className="flex items-center gap-3 sm:gap-4">
+                  <div className="bg-yellow-100 p-2.5 sm:p-4 rounded-full transform hover:scale-110 transition-transform duration-300 flex-shrink-0">
+                    <Users className="h-6 w-6 sm:h-8 sm:w-8 text-yellow-600" />
                   </div>
-                  <h3 className="text-2xl font-bold text-gray-900">Sign Up</h3>
+                  <h3 className="text-xl sm:text-2xl font-bold text-gray-900">Sign Up</h3>
                 </div>
-                <p className="text-lg text-gray-600 leading-relaxed">
+                <p className="text-base sm:text-lg text-gray-600 leading-relaxed">
                   Create your account as a driver or passenger in just a few minutes. Choose your role, verify your identity, and get ready to start sharing rides with our community.
                 </p>
-                <ul className="space-y-2 text-gray-600">
+                <ul className="space-y-2 text-sm sm:text-base text-gray-600">
                   <li className="flex items-center gap-2">
-                    <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                    <div className="w-2 h-2 bg-yellow-500 rounded-full flex-shrink-0"></div>
                     Quick registration process
                   </li>
                   <li className="flex items-center gap-2">
-                    <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                    <div className="w-2 h-2 bg-yellow-500 rounded-full flex-shrink-0"></div>
                     Identity verification for safety
                   </li>
                   <li className="flex items-center gap-2">
-                    <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                    <div className="w-2 h-2 bg-yellow-500 rounded-full flex-shrink-0"></div>
                     Driver license validation
                   </li>
                 </ul>
@@ -297,44 +285,44 @@ const LandingPage = () => {
 
             {/* Connecting Line */}
             <div className="flex justify-center" data-aos="fade-up" data-aos-delay="100">
-              <div className="w-1 h-16 bg-gradient-to-b from-yellow-200 to-yellow-400 rounded-full animate-pulse"></div>
+              <div className="w-1 h-12 sm:h-16 bg-gradient-to-b from-yellow-200 to-yellow-400 rounded-full animate-pulse"></div>
             </div>
 
             {/* Step 2 - Find or Post */}
-            <div className="flex flex-col lg:flex-row-reverse items-center gap-12">
-              <div className="lg:w-1/2" data-aos="fade-left" data-aos-delay="100">
+            <div className="flex flex-col lg:flex-row-reverse items-center gap-6 sm:gap-8 md:gap-12">
+              <div className="w-full lg:w-1/2" data-aos="fade-left" data-aos-delay="100">
                 <div className="relative">
                   <img
                     src="find.jpg"
                     alt="Person searching for rides on map"
-                    className="w-full h-80 object-cover rounded-2xl shadow-lg transform hover:scale-105 transition-transform duration-300"
+                    className="w-full h-56 sm:h-72 md:h-80 object-cover rounded-2xl shadow-lg transform hover:scale-105 transition-transform duration-300"
                   />
-                  <div className="absolute -top-4 -right-4 bg-yellow-500 text-white w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold shadow-lg animate-pulse">
+                  <div className="absolute -top-3 sm:-top-4 -right-3 sm:-right-4 bg-yellow-500 text-white w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center text-xl sm:text-2xl font-bold shadow-lg animate-pulse">
                     02
                   </div>
                 </div>
               </div>
-              <div className="lg:w-1/2 space-y-6" data-aos="fade-right" data-aos-delay="200">
-                <div className="flex items-center gap-4">
-                  <div className="bg-yellow-100 p-4 rounded-full transform hover:scale-110 transition-transform duration-300">
-                    <MapPin className="h-8 w-8 text-yellow-600" />
+              <div className="w-full lg:w-1/2 space-y-4 sm:space-y-6" data-aos="fade-right" data-aos-delay="200">
+                <div className="flex items-center gap-3 sm:gap-4">
+                  <div className="bg-yellow-100 p-2.5 sm:p-4 rounded-full transform hover:scale-110 transition-transform duration-300 flex-shrink-0">
+                    <MapPin className="h-6 w-6 sm:h-8 sm:w-8 text-yellow-600" />
                   </div>
-                  <h3 className="text-2xl font-bold text-gray-900">Find or Post</h3>
+                  <h3 className="text-xl sm:text-2xl font-bold text-gray-900">Find or Post</h3>
                 </div>
-                <p className="text-lg text-gray-600 leading-relaxed">
+                <p className="text-base sm:text-lg text-gray-600 leading-relaxed">
                   Search for available rides or post your own trip with available seats. Use our interactive map to find the perfect match for your journey.
                 </p>
-                <ul className="space-y-2 text-gray-600">
+                <ul className="space-y-2 text-sm sm:text-base text-gray-600">
                   <li className="flex items-center gap-2">
-                    <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                    <div className="w-2 h-2 bg-yellow-500 rounded-full flex-shrink-0"></div>
                     Real-time ride availability
                   </li>
                   <li className="flex items-center gap-2">
-                    <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                    <div className="w-2 h-2 bg-yellow-500 rounded-full flex-shrink-0"></div>
                     Interactive map interface
                   </li>
                   <li className="flex items-center gap-2">
-                    <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                    <div className="w-2 h-2 bg-yellow-500 rounded-full flex-shrink-0"></div>
                     Flexible pickup points
                   </li>
                 </ul>
@@ -343,44 +331,44 @@ const LandingPage = () => {
 
             {/* Connecting Line */}
             <div className="flex justify-center" data-aos="fade-up" data-aos-delay="100">
-              <div className="w-1 h-16 bg-gradient-to-b from-yellow-200 to-yellow-400 rounded-full animate-pulse"></div>
+              <div className="w-1 h-12 sm:h-16 bg-gradient-to-b from-yellow-200 to-yellow-400 rounded-full animate-pulse"></div>
             </div>
 
             {/* Step 3 - Connect */}
-            <div className="flex flex-col lg:flex-row items-center gap-12">
-              <div className="lg:w-1/2" data-aos="fade-right" data-aos-delay="100">
+            <div className="flex flex-col lg:flex-row items-center gap-6 sm:gap-8 md:gap-12">
+              <div className="w-full lg:w-1/2" data-aos="fade-right" data-aos-delay="100">
                 <div className="relative">
                   <img
                     src="connect.jpg"
                     alt="People connecting and confirming ride booking"
-                    className="w-full h-80 object-cover rounded-2xl shadow-lg transform hover:scale-105 transition-transform duration-300"
+                    className="w-full h-56 sm:h-72 md:h-80 object-cover rounded-2xl shadow-lg transform hover:scale-105 transition-transform duration-300"
                   />
-                  <div className="absolute -top-4 -left-4 bg-yellow-500 text-white w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold shadow-lg animate-pulse">
+                  <div className="absolute -top-3 sm:-top-4 -left-3 sm:-left-4 bg-yellow-500 text-white w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center text-xl sm:text-2xl font-bold shadow-lg animate-pulse">
                     03
                   </div>
                 </div>
               </div>
-              <div className="lg:w-1/2 space-y-6" data-aos="fade-left" data-aos-delay="200">
-                <div className="flex items-center gap-4">
-                  <div className="bg-yellow-100 p-4 rounded-full transform hover:scale-110 transition-transform duration-300">
-                    <Shield className="h-8 w-8 text-yellow-600" />
+              <div className="w-full lg:w-1/2 space-y-4 sm:space-y-6" data-aos="fade-left" data-aos-delay="200">
+                <div className="flex items-center gap-3 sm:gap-4">
+                  <div className="bg-yellow-100 p-2.5 sm:p-4 rounded-full transform hover:scale-110 transition-transform duration-300 flex-shrink-0">
+                    <Shield className="h-6 w-6 sm:h-8 sm:w-8 text-yellow-600" />
                   </div>
-                  <h3 className="text-2xl font-bold text-gray-900">Connect</h3>
+                  <h3 className="text-xl sm:text-2xl font-bold text-gray-900">Connect</h3>
                 </div>
-                <p className="text-lg text-gray-600 leading-relaxed">
+                <p className="text-base sm:text-lg text-gray-600 leading-relaxed">
                   Get matched with compatible travelers and confirm your booking. Our system ensures safe connections with verified users and transparent communication.
                 </p>
-                <ul className="space-y-2 text-gray-600">
+                <ul className="space-y-2 text-sm sm:text-base text-gray-600">
                   <li className="flex items-center gap-2">
-                    <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                    <div className="w-2 h-2 bg-yellow-500 rounded-full flex-shrink-0"></div>
                     Verified user profiles
                   </li>
                   <li className="flex items-center gap-2">
-                    <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                    <div className="w-2 h-2 bg-yellow-500 rounded-full flex-shrink-0"></div>
                     In-app messaging system
                   </li>
                   <li className="flex items-center gap-2">
-                    <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                    <div className="w-2 h-2 bg-yellow-500 rounded-full flex-shrink-0"></div>
                     Instant booking confirmation
                   </li>
                 </ul>
@@ -389,94 +377,97 @@ const LandingPage = () => {
 
             {/* Connecting Line */}
             <div className="flex justify-center" data-aos="fade-up" data-aos-delay="100">
-              <div className="w-1 h-16 bg-gradient-to-b from-yellow-200 to-yellow-400 rounded-full animate-pulse"></div>
+              <div className="w-1 h-12 sm:h-16 bg-gradient-to-b from-yellow-200 to-yellow-400 rounded-full animate-pulse"></div>
             </div>
 
             {/* Step 4 - Travel */}
-            <div className="flex flex-col lg:flex-row-reverse items-center gap-12">
-              <div className="lg:w-1/2" data-aos="fade-left" data-aos-delay="100">
+            <div className="flex flex-col lg:flex-row-reverse items-center gap-6 sm:gap-8 md:gap-12">
+              <div className="w-full lg:w-1/2" data-aos="fade-left" data-aos-delay="100">
                 <div className="relative">
                   <img
                     src="travel.jpg"
                     alt="Happy travelers in car sharing a ride"
-                    className="w-full h-80 object-cover rounded-2xl shadow-lg transform hover:scale-105 transition-transform duration-300"
+                    className="w-full h-56 sm:h-72 md:h-80 object-cover rounded-2xl shadow-lg transform hover:scale-105 transition-transform duration-300"
                   />
-                  <div className="absolute -top-4 -right-4 bg-yellow-500 text-white w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold shadow-lg animate-pulse">
+                  <div className="absolute -top-3 sm:-top-4 -right-3 sm:-right-4 bg-yellow-500 text-white w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center text-xl sm:text-2xl font-bold shadow-lg animate-pulse">
                     04
                   </div>
                 </div>
               </div>
-              <div className="lg:w-1/2 space-y-6" data-aos="fade-right" data-aos-delay="200">
-                <div className="flex items-center gap-4">
-                  <div className="bg-yellow-100 p-4 rounded-full transform hover:scale-110 transition-transform duration-300">
-                    <Briefcase className="h-8 w-8 text-yellow-600" />
+              <div className="w-full lg:w-1/2 space-y-4 sm:space-y-6" data-aos="fade-right" data-aos-delay="200">
+                <div className="flex items-center gap-3 sm:gap-4">
+                  <div className="bg-yellow-100 p-2.5 sm:p-4 rounded-full transform hover:scale-110 transition-transform duration-300 flex-shrink-0">
+                    <Briefcase className="h-6 w-6 sm:h-8 sm:w-8 text-yellow-600" />
                   </div>
-                  <h3 className="text-2xl font-bold text-gray-900">Travel</h3>
+                  <h3 className="text-xl sm:text-2xl font-bold text-gray-900">Travel</h3>
                 </div>
-                <p className="text-lg text-gray-600 leading-relaxed">
+                <p className="text-base sm:text-lg text-gray-600 leading-relaxed">
                   Enjoy your shared journey with real-time tracking and secure payments. Travel comfortably knowing you're saving money and helping the environment.
                 </p>
-                <ul className="space-y-2 text-gray-600">
-                  <li className="flex items-center gap-2" data-aos="fade-up" data-aos-delay="300">
-                    <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                <ul className="space-y-2 text-sm sm:text-base text-gray-600">
+                  <li className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-yellow-500 rounded-full flex-shrink-0"></div>
                     Real-time GPS tracking
                   </li>
-                  <li className="flex items-center gap-2" data-aos="fade-up" data-aos-delay="400">
-                    <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                  <li className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-yellow-500 rounded-full flex-shrink-0"></div>
                     Secure payment processing
                   </li>
-                  <li className="flex items-center gap-2" data-aos="fade-up" data-aos-delay="500">
-                    <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                  <li className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-yellow-500 rounded-full flex-shrink-0"></div>
                     24/7 customer support
                   </li>
                 </ul>
               </div>
+            </div>
             </div>
           </div>
         </div>
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 bg-yellow-500">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold text-white mb-4" data-aos="fade-up" data-aos-delay="100">
-            Ready to Start Your Journey?
-          </h2>
-          <p className="text-xl text-yellow-100 mb-8 max-w-2xl mx-auto" data-aos="fade-up" data-aos-delay="200">
-            Join thousands of travelers who are already saving money and reducing their carbon footprint.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center" data-aos="fade-up" data-aos-delay="300">
-            <button
-              onClick={() => handleSignUpClick('passenger')}
-              disabled={isLoading}
-              className="bg-white text-yellow-600 hover:bg-gray-50 px-8 py-4 rounded-lg font-semibold text-lg transition-all duration-200 hover:shadow-lg transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Sign Up as Passenger
-            </button>
-            <button
-              onClick={() => handleSignUpClick('driver')}
-              disabled={isLoading}
-              className="border-2 border-white text-white hover:bg-white hover:text-yellow-600 px-8 py-4 rounded-lg font-semibold text-lg transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Sign Up as Driver
-            </button>
+      <section className="py-8 sm:py-12 md:py-16 lg:py-20 bg-yellow-500 w-full">
+        <div className="w-full px-0">
+          <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 text-center">
+            <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-white mb-2 sm:mb-3 md:mb-4" data-aos="fade-up" data-aos-delay="100">
+              Ready to Start Your Journey?
+            </h2>
+            <p className="text-xs sm:text-sm md:text-base lg:text-lg text-yellow-100 mb-4 sm:mb-6 md:mb-8 max-w-2xl mx-auto px-1" data-aos="fade-up" data-aos-delay="200">
+              Join thousands of travelers who are already saving money and reducing their carbon footprint.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 md:gap-4 justify-center" data-aos="fade-up" data-aos-delay="300">
+              <button
+                onClick={() => handleSignUpClick('passenger')}
+                disabled={isLoading}
+                className="bg-white text-yellow-600 hover:bg-gray-50 px-4 sm:px-6 md:px-8 py-2.5 sm:py-3 md:py-4 rounded-lg font-semibold text-sm sm:text-base md:text-lg transition-all duration-200 hover:shadow-lg transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto"
+              >
+                Sign Up as Passenger
+              </button>
+              <button
+                onClick={() => handleSignUpClick('driver')}
+                disabled={isLoading}
+                className="border-2 border-white text-white hover:bg-white hover:text-yellow-600 px-4 sm:px-6 md:px-8 py-2.5 sm:py-3 md:py-4 rounded-lg font-semibold text-sm sm:text-base md:text-lg transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto"
+              >
+                Sign Up as Driver
+              </button>
+            </div>
           </div>
         </div>
       </section>
 
       {/* Loading Overlay with Quotes */}
       {isLoading && (
-        <div className="fixed inset-0 bg-white bg-opacity-95 flex flex-col items-center justify-center z-50">
+        <div className="fixed inset-0 bg-white bg-opacity-95 flex flex-col items-center justify-center z-50 px-4">
           <Loader 
-            size={250}
+            size={180}
             showText={false}
-            className="mb-8"
+            className="mb-6 sm:mb-8"
           />
-          <div className="text-center max-w-lg mx-auto px-4">
-            <h3 className="text-2xl font-bold text-gray-900 mb-4">
+          <div className="text-center max-w-lg mx-auto">
+            <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4">
               Getting Ready for Your Journey...
             </h3>
-            <p className="text-xl text-yellow-600 font-medium mb-2 animate-pulse">
+            <p className="text-base sm:text-lg text-yellow-600 font-medium mb-2 animate-pulse">
               {quotes[currentQuote]}
             </p>
             <div className="flex justify-center space-x-2 mt-6">

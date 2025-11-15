@@ -9,6 +9,8 @@ import PaymentHistory from './PaymentHistory'
 import Loader from './Loader'
 import { toast, ToastContainer } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
+import EmergencySOSButton from './EmergencySOSButton'
+import EmergencyContacts from './EmergencyContacts'
 
 // Fix for default markers in react-leaflet
 delete L.Icon.Default.prototype._getIconUrl
@@ -84,6 +86,9 @@ const PassengerDashboard = ({ user }) => {
   const [historyLoading, setHistoryLoading] = useState(false)
   const [paymentsLoading, setPaymentsLoading] = useState(false)
   const [profileLoading, setProfileLoading] = useState(false)
+  
+  // Emergency SOS State
+  const [currentRide, setCurrentRide] = useState(null) // Track active ride for emergency
   
   // Map and Location state
   const [showFromSuggestions, setShowFromSuggestions] = useState(false)
@@ -419,6 +424,12 @@ const PassengerDashboard = ({ user }) => {
           await new Promise(resolve => setTimeout(resolve, historyRemainingTime))
           setHistoryLoading(false)
           console.log('History loading completed')
+          break
+        case 'emergency':
+          console.log('Loading emergency tab...')
+          // Emergency tab loads instantly - no API calls needed
+          await new Promise(resolve => setTimeout(resolve, 500))
+          console.log('Emergency tab loaded')
           break
         case 'payments':
           console.log('Loading payments tab...')
@@ -882,73 +893,86 @@ const PassengerDashboard = ({ user }) => {
       )}
 
       {/* Header */}
-      <div className="bg-white shadow-sm px-6 py-4">
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Welcome back, {user?.firstName}!</h1>
-            <p className="text-gray-600">Find your perfect ride</p>
+      <div className="bg-white shadow-sm px-4 sm:px-6 py-3 sm:py-4">
+        <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4">
+          <div className="flex-shrink-0">
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Welcome back, {user?.firstName}!</h1>
+            <p className="text-sm sm:text-base text-gray-600">Find your perfect ride</p>
           </div>
           
-          {/* Tab Navigation - Horizontal */}
-          <div className="flex space-x-1 bg-yellow-500  rounded-lg p-1">
+          {/* Tab Navigation - Responsive */}
+          <div className="flex flex-wrap gap-2 bg-yellow-500 rounded-lg p-1 overflow-x-auto">
             <button
               onClick={() => handleTabSwitch('search')}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              className={`px-3 sm:px-4 py-2 rounded-md text-xs sm:text-sm font-medium transition-colors whitespace-nowrap ${
                 activeTab === 'search' 
                   ? 'bg-white text-gray-900 shadow-sm' 
                   : 'text-gray-600 hover:text-gray-900'
               }`}
             >
-              Search Rides
+              Search
             </button>
             <button
               onClick={() => handleTabSwitch('bookings')}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              className={`px-3 sm:px-4 py-2 rounded-md text-xs sm:text-sm font-medium transition-colors whitespace-nowrap ${
                 activeTab === 'bookings' 
                   ? 'bg-white text-gray-900 shadow-sm' 
                   : 'text-gray-600 hover:text-gray-900'
               }`}
             >
-              My Bookings ({bookings.length})
+              <span className="hidden sm:inline">My Bookings</span>
+              <span className="sm:hidden">Bookings</span> ({bookings.length})
             </button>
             <button
               onClick={() => handleTabSwitch('history')}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              className={`px-3 sm:px-4 py-2 rounded-md text-xs sm:text-sm font-medium transition-colors whitespace-nowrap ${
                 activeTab === 'history' 
                   ? 'bg-white text-gray-900 shadow-sm' 
                   : 'text-gray-600 hover:text-gray-900'
               }`}
             >
-              Ride History ({rideHistory.length})
+              <span className="hidden sm:inline">Ride History</span>
+              <span className="sm:hidden">History</span> ({rideHistory.length})
+            </button>
+            <button
+              onClick={() => handleTabSwitch('emergency')}
+              className={`px-3 sm:px-4 py-2 rounded-md text-xs sm:text-sm font-medium transition-colors whitespace-nowrap ${
+                activeTab === 'emergency' 
+                  ? 'bg-white text-gray-900 shadow-sm' 
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              🚨 Emergency
             </button>
             <button
               onClick={() => handleTabSwitch('payments')}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              className={`px-3 sm:px-4 py-2 rounded-md text-xs sm:text-sm font-medium transition-colors whitespace-nowrap ${
                 activeTab === 'payments' 
                   ? 'bg-white text-gray-900 shadow-sm' 
                   : 'text-gray-600 hover:text-gray-900'
               }`}
             >
-              Payment History
+              <span className="hidden sm:inline">Payments</span>
+              <span className="sm:hidden">Pay</span>
             </button>
             <button
               onClick={() => handleTabSwitch('profile')}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              className={`px-3 sm:px-4 py-2 rounded-md text-xs sm:text-sm font-medium transition-colors whitespace-nowrap ${
                 activeTab === 'profile' 
                   ? 'bg-white text-gray-900 shadow-sm' 
                   : 'text-gray-600 hover:text-gray-900'
               }`}
             >
-              My Profile
+              Profile
             </button>
           </div>
         </div>
       </div>
 
       {/* Loading Overlay */}
-      {/* Main Content - Two Column Layout for Search Tab */}
+      {/* Main Content - Responsive Layout for Search Tab */}
       {activeTab === 'search' && (
-        <div className="flex-1 flex relative">
+        <div className="flex-1 flex flex-col lg:flex-row relative overflow-hidden">
           {/* Search Loading Overlay */}
           {searchLoading && (
             <div className="absolute inset-0 bg-white flex flex-col items-center justify-center z-50 rounded-lg">
@@ -958,7 +982,7 @@ const PassengerDashboard = ({ user }) => {
                 text="Loading ride search..."
                 className="mb-4"
               />
-              <div className="text-center">
+              <div className="text-center px-4">
                 <h4 className="text-lg font-medium text-gray-900 mb-2">
                   Preparing Search Interface
                 </h4>
@@ -970,10 +994,10 @@ const PassengerDashboard = ({ user }) => {
           )}
           
           {/* Left Panel - Search Form */}
-          <div className="w-2/5 bg-white border-r border-gray-200 overflow-y-auto">
-            <div className="p-6">
-              <h2 className="text-xl font-semibold mb-6">Get ready for your first trip</h2>
-              <p className="text-gray-600 mb-8">Discover the convenience of SmartRide. Request a ride now, or schedule one for later directly from your browser.</p>
+          <div className="w-full lg:w-2/5 bg-white border-r border-gray-200 overflow-y-auto">
+            <div className="p-4 sm:p-6">
+              <h2 className="text-lg sm:text-xl font-semibold mb-4 sm:mb-6">Get ready for your first trip</h2>
+              <p className="text-sm sm:text-base text-gray-600 mb-6 sm:mb-8">Discover the convenience of SmartRide. Request a ride now, or schedule one for later directly from your browser.</p>
               
               {/* Search Form */}
               <div className="space-y-4">
@@ -1246,8 +1270,8 @@ const PassengerDashboard = ({ user }) => {
             </div>
           </div>
 
-          {/* Right Panel - Real World Map */}
-          <div className="flex-1 bg-gray-100 relative overflow-hidden">
+          {/* Right Panel - Real World Map - Hidden on mobile, visible on lg+ */}
+          <div className="hidden lg:flex lg:flex-1 bg-gray-100 relative overflow-hidden">
             {/* Map Container */}
             <div className="absolute inset-0 z-0">
               <MapContainer
@@ -1306,19 +1330,19 @@ const PassengerDashboard = ({ user }) => {
             
             {/* Route info overlay */}
             {searchFilters.from && searchFilters.to && (
-              <div className="absolute top-4 left-4 bg-white rounded-lg shadow-lg p-4 max-w-sm z-10">
-                <h4 className="font-medium mb-3 flex items-center gap-2">
+              <div className="absolute top-4 left-4 bg-white rounded-lg shadow-lg p-3 sm:p-4 max-w-xs sm:max-w-sm z-10">
+                <h4 className="text-sm sm:text-base font-medium mb-3 flex items-center gap-2">
                   <Car className="h-4 w-4 text-yellow-500" />
                   Route Overview
                 </h4>
                 <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-sm">
-                    <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                  <div className="flex items-center gap-2 text-xs sm:text-sm">
+                    <div className="w-3 h-3 bg-green-500 rounded-full flex-shrink-0"></div>
                     <span className="flex-1 truncate">{searchFilters.from}</span>
                   </div>
                   <div className="ml-1.5 w-0.5 h-4 bg-gray-300"></div>
-                  <div className="flex items-center gap-2 text-sm">
-                    <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                  <div className="flex items-center gap-2 text-xs sm:text-sm">
+                    <div className="w-3 h-3 bg-red-500 rounded-full flex-shrink-0"></div>
                     <span className="flex-1 truncate">{searchFilters.to}</span>
                   </div>
                 </div>
@@ -1373,36 +1397,47 @@ const PassengerDashboard = ({ user }) => {
         </div>
       )}
 
-      {/* Other Tabs Content (Full Width) */}
+      {/* Other Tabs Content (Full Width) - Responsive */}
       {activeTab !== 'search' && (
         <div className="flex-1 overflow-y-auto">
-          <div className="max-w-7xl mx-auto px-6 py-8">
-            <div className="bg-white rounded-lg shadow-sm p-6">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-8">
+            <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6">
               {/* Tab Content for non-search tabs */}
               {activeTab === 'bookings' && (
-                <div className="bg-yellow-200 rounded-lg p-6 relative">
-                  <h3 className="text-xl font-semibold mb-6 text-gray-800">My Bookings</h3>
+                <div className="bg-yellow-200 rounded-lg p-4 sm:p-6 relative">
+                  {/* Smooth Loading Indicator */}
+                  {bookingsLoading && (
+                    <div className="absolute inset-0 bg-gradient-to-br from-yellow-50 to-white backdrop-blur-sm flex flex-col items-center justify-center z-50 rounded-lg">
+                      <div className="text-center px-4">
+                        <div className="inline-block animate-spin rounded-full h-12 sm:h-16 w-12 sm:w-16 border-4 border-yellow-200 border-t-yellow-500 mb-4"></div>
+                        <h4 className="text-lg sm:text-xl font-semibold text-gray-800 mb-2">Loading Bookings...</h4>
+                        <p className="text-xs sm:text-sm text-gray-600">Fetching your ride bookings</p>
+                      </div>
+                    </div>
+                  )}
+                  
+                  <h3 className="text-lg sm:text-xl font-semibold mb-4 sm:mb-6 text-gray-800">My Bookings</h3>
                   
                   {bookings.length === 0 ? (
-                    <div className="text-center py-12 text-gray-500 bg-white rounded-lg shadow-sm">
-                      <Calendar className="h-16 w-16 mx-auto mb-4 text-gray-300" />
-                      <h3 className="text-lg font-medium mb-2">No bookings yet</h3>
-                      <p>Start by searching for rides in the Search tab.</p>
+                    <div className="text-center py-8 sm:py-12 text-gray-500 bg-white rounded-lg shadow-sm">
+                      <Calendar className="h-12 sm:h-16 w-12 sm:w-16 mx-auto mb-4 text-gray-300" />
+                      <h3 className="text-base sm:text-lg font-medium mb-2">No bookings yet</h3>
+                      <p className="text-sm sm:text-base">Start by searching for rides in the Search tab.</p>
                     </div>
                   ) : (
                     <div className="space-y-4">
                       {Array.isArray(bookings) && bookings.map((booking) => (
-                        <div key={booking.id} className="bg-yellow-100 border border-yellow-700 rounded-lg p-6 hover:shadow-lg transition-shadow shadow-sm">
-                          <div className="flex justify-between items-start mb-4">
+                        <div key={booking.id} className="bg-yellow-100 border border-yellow-700 rounded-lg p-4 sm:p-6 hover:shadow-lg transition-shadow shadow-sm">
+                          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4 mb-4">
                             <div className="flex-1">
-                              <div className="flex items-center space-x-2 mb-2">
-                                <MapPin className="h-4 w-4 text-green-500" />
-                                <span className="font-medium">{booking.source || booking.ride?.source || 'N/A'}</span>
+                              <div className="flex flex-wrap items-center gap-2 mb-2">
+                                <MapPin className="h-4 w-4 text-green-500 flex-shrink-0" />
+                                <span className="font-medium text-sm sm:text-base">{booking.source || booking.ride?.source || 'N/A'}</span>
                                 <span className="text-gray-400">→</span>
-                                <MapPin className="h-4 w-4 text-red-500" />
-                                <span className="font-medium">{booking.destination || booking.ride?.destination || 'N/A'}</span>
+                                <MapPin className="h-4 w-4 text-red-500 flex-shrink-0" />
+                                <span className="font-medium text-sm sm:text-base">{booking.destination || booking.ride?.destination || 'N/A'}</span>
                               </div>
-                              <div className="flex items-center space-x-4 text-sm text-gray-600">
+                              <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-xs sm:text-sm text-gray-600">
                                 <div className="flex items-center space-x-1">
                                   <Calendar className="h-4 w-4" />
                                   <span>
@@ -1432,19 +1467,19 @@ const PassengerDashboard = ({ user }) => {
                                   <span>{booking.departureDate ? new Date(booking.departureDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A'}</span>
                                 </div>
                                 <div className="flex items-center space-x-1">
-                                  <Users className="h-4 w-4" />
+                                  <Users className="h-4 w-4 flex-shrink-0" />
                                   <span>{booking.seatsBooked} seats</span>
                                 </div>
                               </div>
                             </div>
-                            <div className="text-right">
-                              <div className="text-xl font-bold text-gray-900">₹{booking.totalAmount || booking.totalPrice || 0}</div>
-                              <div className="text-sm text-gray-500">Total amount</div>
+                            <div className="text-right flex-shrink-0">
+                              <div className="text-lg sm:text-xl font-bold text-gray-900">₹{booking.totalAmount || booking.totalPrice || 0}</div>
+                              <div className="text-xs sm:text-sm text-gray-500">Total amount</div>
                             </div>
                           </div>
                           
-                          <div className="flex items-center justify-between">
-                            <div>
+                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-2">
+                            <div className="flex flex-wrap items-center gap-2">
                               <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                                 booking.status === 'CONFIRMED' 
                                   ? 'bg-green-100 text-green-800'
@@ -1456,23 +1491,23 @@ const PassengerDashboard = ({ user }) => {
                               }`}>
                                 {booking.status}
                               </span>
-                              <span className="ml-2 text-sm text-gray-500">
+                              <span className="text-xs sm:text-sm text-gray-500">
                                 Booking ID: {booking.id}
                               </span>
                             </div>
                             
-                            <div className="flex gap-2">
+                            <div className="flex flex-wrap gap-2">
                               {booking.status === 'CONFIRMED' && (
                                 <>
                                   <button
                                     onClick={() => setPaymentModal({ isOpen: true, booking: booking })}
-                                    className="bg-yellow-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-yellow-700 transition-colors"
+                                    className="bg-yellow-600 text-white px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium hover:bg-yellow-700 transition-colors"
                                   >
                                     Pay Now
                                   </button>
                                   <button
                                     onClick={() => handleCancelBooking(booking.id)}
-                                    className="text-red-600 hover:text-red-800 text-sm font-medium"
+                                    className="text-red-600 hover:text-red-800 text-xs sm:text-sm font-medium px-2"
                                   >
                                     Cancel
                                   </button>
@@ -1480,11 +1515,11 @@ const PassengerDashboard = ({ user }) => {
                               )}
                               
                               {booking.status === 'PENDING' && (
-                                <div className="flex items-center gap-2">
-                                  <span className="text-sm text-gray-500">Waiting for driver confirmation...</span>
+                                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+                                  <span className="text-xs sm:text-sm text-gray-500">Waiting for driver confirmation...</span>
                                   <button
                                     onClick={() => handleCancelBooking(booking.id)}
-                                    className="text-red-600 hover:text-red-800 text-sm font-medium"
+                                    className="text-red-600 hover:text-red-800 text-xs sm:text-sm font-medium"
                                   >
                                     Cancel
                                   </button>
@@ -1492,7 +1527,7 @@ const PassengerDashboard = ({ user }) => {
                               )}
                               
                               {booking.status === 'PAID' && (
-                                <span className="text-sm text-green-600 font-medium">✓ Payment Complete</span>
+                                <span className="text-xs sm:text-sm text-green-600 font-medium">✓ Payment Complete</span>
                               )}
                             </div>
                           </div>
@@ -1504,14 +1539,25 @@ const PassengerDashboard = ({ user }) => {
               )}
 
               {activeTab === 'history' && (
-                <div className="bg-yellow-200 rounded-lg p-6 relative">
-                  <h3 className="text-xl font-semibold mb-6 text-gray-800">Ride History</h3>
+                <div className="bg-yellow-200 rounded-lg p-4 sm:p-6 relative">
+                  {/* Smooth Loading Indicator */}
+                  {historyLoading && (
+                    <div className="absolute inset-0 bg-gradient-to-br from-yellow-50 to-white backdrop-blur-sm flex flex-col items-center justify-center z-50 rounded-lg">
+                      <div className="text-center px-4">
+                        <div className="inline-block animate-spin rounded-full h-12 sm:h-16 w-12 sm:w-16 border-4 border-yellow-200 border-t-yellow-500 mb-4"></div>
+                        <h4 className="text-lg sm:text-xl font-semibold text-gray-800 mb-2">Loading History...</h4>
+                        <p className="text-xs sm:text-sm text-gray-600">Fetching your ride history</p>
+                      </div>
+                    </div>
+                  )}
+                  
+                  <h3 className="text-lg sm:text-xl font-semibold mb-4 sm:mb-6 text-gray-800">Ride History</h3>
                   
                   {rideHistory.length === 0 ? (
-                    <div className="text-center py-12 text-gray-500 bg-white rounded-lg shadow-sm">
-                      <Clock className="h-16 w-16 mx-auto mb-4 text-gray-300" />
-                      <h3 className="text-lg font-medium mb-2">No completed rides yet</h3>
-                      <p>Your ride history will appear here after you complete trips.</p>
+                    <div className="text-center py-8 sm:py-12 text-gray-500 bg-white rounded-lg shadow-sm">
+                      <Clock className="h-12 sm:h-16 w-12 sm:w-16 mx-auto mb-4 text-gray-300" />
+                      <h3 className="text-base sm:text-lg font-medium mb-2">No completed rides yet</h3>
+                      <p className="text-sm sm:text-base">Your ride history will appear here after you complete trips.</p>
                     </div>
                   ) : (
                     <div className="space-y-4">
@@ -1527,49 +1573,88 @@ const PassengerDashboard = ({ user }) => {
                 </div>
               )}
 
+              {activeTab === 'emergency' && (
+                <div className="bg-white rounded-lg p-4 sm:p-6">
+                  <h3 className="text-lg sm:text-xl font-semibold mb-6 text-gray-800 flex items-center gap-2">
+                    🚨 Emergency Safety Center
+                  </h3>
+                  
+                  {/* Emergency Info Banner */}
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+                    <h4 className="font-semibold text-red-900 mb-2">Your Safety is Our Priority</h4>
+                    <p className="text-sm text-red-800 mb-3">
+                      In case of emergency during a ride, use the SOS button to instantly alert your emergency contacts 
+                      and our admin team with your live location.
+                    </p>
+                    <div className="text-xs text-red-700 space-y-1">
+                      <p>✓ SMS & Email notifications to all contacts</p>
+                      <p>✓ Voice calls to primary contacts</p>
+                      <p>✓ Live location tracking for 1 hour</p>
+                      <p>✓ Admin monitoring and support</p>
+                    </div>
+                  </div>
+
+                  {/* Emergency Contacts Section */}
+                  <div className="mb-6">
+                    <h4 className="text-lg font-semibold mb-4 text-gray-800">Manage Emergency Contacts</h4>
+                    <EmergencyContacts />
+                  </div>
+
+                  {/* Quick Emergency Actions */}
+                  <div className="bg-gray-50 rounded-lg p-4 mt-6">
+                    <h4 className="text-sm font-semibold mb-2 text-gray-700">Quick Actions</h4>
+                    <div className="text-xs text-gray-600 space-y-1">
+                      <p>• Look for the red SOS button (bottom-right corner) during rides</p>
+                      <p>• Make sure your emergency contacts are up to date</p>
+                      <p>• For life-threatening emergencies, call 100 (Police) or 108 (Ambulance)</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {activeTab === 'payments' && (
-                <div className="bg-yellow-200 rounded-lg p-6 relative">
+                <div className="bg-yellow-200 rounded-lg p-4 sm:p-6 relative">
                   {/* Payments Loading Overlay */}
                   {paymentsLoading && (
-                    <div className="absolute inset-0 bg-white flex flex-col items-center justify-center z-50 rounded-lg">
+                    <div className="absolute inset-0 bg-white flex flex-col items-center justify-center z-50 rounded-lg px-4">
                       <Loader 
-                        size={250}
+                        size={200}
                         showText={true}
                         text="Loading payment history..."
                         className="mb-4"
                       />
                       <div className="text-center">
-                        <h4 className="text-lg font-medium text-gray-900 mb-2">
+                        <h4 className="text-base sm:text-lg font-medium text-gray-900 mb-2">
                           Fetching Payment Information
                         </h4>
-                        <p className="text-sm text-gray-600">
+                        <p className="text-xs sm:text-sm text-gray-600">
                           Please wait while we load your payment history...
                         </p>
                       </div>
                     </div>
                   )}
                   
-                  <h3 className="text-xl font-semibold mb-6">Payment History</h3>
+                  <h3 className="text-lg sm:text-xl font-semibold mb-4 sm:mb-6">Payment History</h3>
                   <PaymentHistory user={user} userType="passenger" />
                 </div>
               )}
 
               {activeTab === 'profile' && (
-                <div className="bg-white rounded-lg p-6 shadow-sm relative">
+                <div className="bg-white rounded-lg p-4 sm:p-6 shadow-sm relative">
                   {/* Profile Loading Overlay */}
                   {profileLoading && (
-                    <div className="absolute inset-0 bg-white flex flex-col items-center justify-center z-50 rounded-lg">
+                    <div className="absolute inset-0 bg-white flex flex-col items-center justify-center z-50 rounded-lg px-4">
                       <Loader 
-                        size={250}
+                        size={200}
                         showText={true}
                         text="Loading profile data..."
                         className="mb-4"
                       />
                       <div className="text-center">
-                        <h4 className="text-lg font-medium text-gray-900 mb-2">
+                        <h4 className="text-base sm:text-lg font-medium text-gray-900 mb-2">
                           Fetching Profile Information
                         </h4>
-                        <p className="text-sm text-gray-600">
+                        <p className="text-xs sm:text-sm text-gray-600">
                           Please wait while we load your account details...
                         </p>
                       </div>
@@ -1577,185 +1662,118 @@ const PassengerDashboard = ({ user }) => {
                   )}
                   
                   {error && (
-                    <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-                      <p className="text-red-700">{error}</p>
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-3 sm:p-4 mb-4 sm:mb-6">
+                      <p className="text-sm sm:text-base text-red-700">{error}</p>
                     </div>
                   )}
 
-                  {!isEditingProfile ? (
-                    // Profile Display Mode
-                    <div className="text-center">
-                      <div className="mb-8">
-                        <div className="w-24 h-24 bg-yellow-100 rounded-full mx-auto mb-4 flex items-center justify-center">
-                          <span className="text-2xl font-bold text-yellow-600">
-                            {profileData.firstName?.charAt(0)?.toUpperCase() || user?.firstName?.charAt(0)?.toUpperCase() || 'U'}
-                          </span>
+                  {/* Profile Display Mode - Read Only */}
+                  <div className="max-w-4xl mx-auto">
+                    {/* Profile Header */}
+                    <div className="text-center mb-6 sm:mb-10">
+                      <div className="w-24 h-24 sm:w-32 sm:h-32 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-full mx-auto mb-4 sm:mb-6 flex items-center justify-center shadow-xl">
+                        <span className="text-4xl sm:text-5xl font-bold text-white">
+                          {user?.firstName?.charAt(0)?.toUpperCase() || 'U'}
+                        </span>
+                      </div>
+                      <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2 sm:mb-3">
+                        {user?.firstName || 'User'} {user?.lastName || ''}
+                      </h2>
+                      <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-6 text-sm sm:text-base text-gray-600 mb-2">
+                        <div className="flex items-center gap-2">
+                          <svg className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                          </svg>
+                          <span className="break-all">{user?.email || 'No email provided'}</span>
                         </div>
-                        <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                          {profileData.firstName && profileData.lastName 
-                            ? `${profileData.firstName} ${profileData.lastName}`
-                            : `${user?.firstName || 'User'} ${user?.lastName || ''}`
+                      </div>
+                      <div className="flex items-center justify-center gap-2 text-sm sm:text-base text-gray-600">
+                        <svg className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                        </svg>
+                        <span>{user?.phoneNumber || 'No phone number'}</span>
+                      </div>
+                    </div>
+
+                    {/* Statistics Grid - Responsive */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
+                      {/* Member Since */}
+                      <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 p-4 sm:p-6 rounded-xl shadow-md hover:shadow-lg transition-shadow">
+                        <div className="flex items-center justify-between mb-2 sm:mb-3">
+                          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-yellow-500 rounded-lg flex items-center justify-center">
+                            <Calendar className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
+                          </div>
+                        </div>
+                        <h4 className="text-xs sm:text-sm font-medium text-gray-600 mb-1">Member Since</h4>
+                        <p className="text-lg sm:text-2xl font-bold text-gray-900">
+                          {user?.createdAt 
+                            ? new Date(user.createdAt).toLocaleDateString('en-IN', { 
+                                day: 'numeric',
+                                month: 'short',
+                                year: 'numeric'
+                              })
+                            : 'Recently'
                           }
-                        </h2>
-                        <p className="text-gray-600">
-                          {profileData.email || user?.email || 'No email provided'}
-                        </p>
-                        <p className="text-gray-600">
-                          {profileData.phoneNumber || user?.phoneNumber || 'No phone number'}
                         </p>
                       </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                        <div className="bg-gray-50 p-4 rounded-lg">
-                          <h4 className="font-medium text-gray-900 mb-2">Date of Birth</h4>
-                          <p className="text-gray-600">
-                            {profileData.dateOfBirth 
-                              ? new Date(profileData.dateOfBirth).toLocaleDateString()
-                              : 'Not provided'
-                            }
-                          </p>
+                      {/* Total Bookings */}
+                      <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 p-4 sm:p-6 rounded-xl shadow-md hover:shadow-lg transition-shadow">
+                        <div className="flex items-center justify-between mb-2 sm:mb-3">
+                          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-yellow-500 rounded-lg flex items-center justify-center">
+                            <Car className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
+                          </div>
                         </div>
-                        <div className="bg-gray-50 p-4 rounded-lg">
-                          <h4 className="font-medium text-gray-900 mb-2">Member Since</h4>
-                          <p className="text-gray-600">
-                            {user?.createdAt 
-                              ? new Date(user.createdAt).toLocaleDateString()
-                              : 'Recently joined'
-                            }
-                          </p>
-                        </div>
+                        <h4 className="text-xs sm:text-sm font-medium text-gray-600 mb-1">Total Bookings</h4>
+                        <p className="text-lg sm:text-2xl font-bold text-gray-900">
+                          {bookings.length + rideHistory.length}
+                        </p>
                       </div>
 
-                      {profileData.address && (
-                        <div className="bg-gray-50 p-4 rounded-lg mb-8">
-                          <h4 className="font-medium text-gray-900 mb-2">Address</h4>
-                          <p className="text-gray-600">{profileData.address}</p>
+                      {/* Successful Rides */}
+                      <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 p-4 sm:p-6 rounded-xl shadow-md hover:shadow-lg transition-shadow">
+                        <div className="flex items-center justify-between mb-2 sm:mb-3">
+                          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-yellow-500 rounded-lg flex items-center justify-center">
+                            <svg className="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                          </div>
                         </div>
-                      )}
-
-                      <button
-                        onClick={() => setIsEditingProfile(true)}
-                        className="bg-yellow-600 text-white px-6 py-3 rounded-lg hover:bg-yellow-700 transition-colors text-lg font-medium"
-                      >
-                        Edit Profile Details
-                      </button>
-                    </div>
-                  ) : (
-                    // Profile Edit Mode
-                    <div>
-                      <div className="flex justify-between items-center mb-6">
-                        <h3 className="text-xl font-semibold text-gray-900">Edit Profile</h3>
-                        <button
-                          onClick={() => setIsEditingProfile(false)}
-                          className="text-gray-500 hover:text-gray-700"
-                        >
-                          ✕
-                        </button>
+                        <h4 className="text-xs sm:text-sm font-medium text-gray-600 mb-1">Successful Rides</h4>
+                        <p className="text-lg sm:text-2xl font-bold text-gray-900">
+                          {rideHistory.filter(ride => ride.status === 'COMPLETED' || ride.status === 'PAID').length}
+                        </p>
                       </div>
 
-                      <form onSubmit={handleProfileUpdate} className="space-y-6">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                              First Name *
-                            </label>
-                            <input
-                              type="text"
-                              value={profileData.firstName}
-                              onChange={(e) => handleProfileInputChange('firstName', e.target.value)}
-                              required
-                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
-                            />
-                          </div>
-                          
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                              Last Name *
-                            </label>
-                            <input
-                              type="text"
-                              value={profileData.lastName}
-                              onChange={(e) => handleProfileInputChange('lastName', e.target.value)}
-                              required
-                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
-                            />
-                          </div>
-                          
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                              Email *
-                            </label>
-                            <input
-                              type="email"
-                              value={profileData.email}
-                              onChange={(e) => handleProfileInputChange('email', e.target.value)}
-                              required
-                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
-                            />
-                          </div>
-                          
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                              Phone Number
-                            </label>
-                            <input
-                              type="tel"
-                              value={profileData.phoneNumber}
-                              disabled={true}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-500 cursor-not-allowed"
-                              placeholder="Phone number cannot be changed"
-                            />
-                            <p className="text-xs text-gray-500 mt-1">Phone number cannot be modified for security reasons</p>
-                          </div>
-                          
-                          <div className="md:col-span-2">
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                              Date of Birth
-                            </label>
-                            <input
-                              type="date"
-                              value={profileData.dateOfBirth}
-                              onChange={(e) => handleProfileInputChange('dateOfBirth', e.target.value)}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
-                            />
+                      {/* Total Amount Spent */}
+                      <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 p-4 sm:p-6 rounded-xl shadow-md hover:shadow-lg transition-shadow">
+                        <div className="flex items-center justify-between mb-2 sm:mb-3">
+                          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-yellow-500 rounded-lg flex items-center justify-center">
+                            <svg className="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
                           </div>
                         </div>
-                        
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Address
-                          </label>
-                          <textarea
-                            value={profileData.address}
-                            onChange={(e) => handleProfileInputChange('address', e.target.value)}
-                            rows="3"
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
-                            placeholder="Enter your full address"
-                          />
-                        </div>
-
-                        <div className="flex space-x-4 pt-4 border-t">
-                          <button
-                            type="submit"
-                            disabled={profileLoading}
-                            className="bg-yellow-600 text-white px-6 py-2 rounded-lg hover:bg-yellow-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                          >
-                            {profileLoading ? 'Saving...' : 'Save Changes'}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setIsEditingProfile(false)
-                              fetchUserProfile() // Reset form data
-                            }}
-                            className="bg-gray-500 text-white px-6 py-2 rounded-lg hover:bg-gray-600 transition-colors"
-                          >
-                            Cancel
-                          </button>
-                        </div>
-                      </form>
+                        <h4 className="text-xs sm:text-sm font-medium text-gray-600 mb-1">Total Amount Spent</h4>
+                        <p className="text-lg sm:text-2xl font-bold text-gray-900">
+                          ₹{[...bookings, ...rideHistory]
+                            .filter(item => item.status === 'PAID' || item.status === 'COMPLETED')
+                            .reduce((sum, item) => sum + (item.totalAmount || item.totalPrice || 0), 0)
+                            .toLocaleString('en-IN')}
+                        </p>
+                      </div>
                     </div>
-                  )}
+
+                    {/* Additional Info Section - Responsive */}
+                    <div className="bg-gradient-to-r from-yellow-50 to-orange-50 rounded-xl p-4 sm:p-6 md:p-8 text-center">
+                      <h3 className="text-lg sm:text-xl font-semibold text-gray-800 mb-2">
+                        Thank you for being a valued member! 🎉
+                      </h3>
+                      <p className="text-sm sm:text-base text-gray-600">
+                        Your journey with us continues to make every ride better.
+                      </p>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
@@ -1770,6 +1788,9 @@ const PassengerDashboard = ({ user }) => {
         booking={paymentModal.booking}
         onPaymentSuccess={handlePaymentSuccess}
       />
+      
+      {/* Emergency SOS Button - Floating on all pages */}
+      <EmergencySOSButton user={user} ride={currentRide} />
       
       {/* Toast Container */}
       <ToastContainer

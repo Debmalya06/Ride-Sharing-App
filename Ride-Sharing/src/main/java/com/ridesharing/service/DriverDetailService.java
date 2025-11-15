@@ -58,6 +58,7 @@ public class DriverDetailService {
         driverDetail.setCarYear(driverDetailDto.getCarYear());
         driverDetail.setInsuranceNumber(driverDetailDto.getInsuranceNumber());
         driverDetail.setInsuranceExpiry(driverDetailDto.getInsuranceExpiryDate().atStartOfDay());
+        driverDetail.setIsVerified(false); // New drivers start unverified
 
         return driverDetailRepository.save(driverDetail);
     }
@@ -112,6 +113,15 @@ public class DriverDetailService {
                 .orElseThrow(() -> new RuntimeException("Driver details not found"));
         
         driverDetail.setIsVerified(verified);
+        return driverDetailRepository.save(driverDetail);
+    }
+
+    public DriverDetail rejectDriverDetails(Long driverDetailId, String rejectionReason) {
+        DriverDetail driverDetail = driverDetailRepository.findById(driverDetailId)
+                .orElseThrow(() -> new RuntimeException("Driver details not found"));
+        
+        driverDetail.setIsVerified(false);
+        driverDetail.setRejectionReason(rejectionReason);
         return driverDetailRepository.save(driverDetail);
     }
 

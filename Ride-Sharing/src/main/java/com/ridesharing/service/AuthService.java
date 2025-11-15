@@ -62,12 +62,13 @@ public class AuthService {
                 role
         );
 
-        // Send OTP
-        otpService.generateAndSendOtp(user.getPhoneNumber());
+        // Send OTP via Email (also prints to console)
+        otpService.generateAndSendOtp(user.getPhoneNumber(), user.getEmail());
 
         Map<String, Object> response = new HashMap<>();
-        response.put("message", "User registered successfully. Please verify your phone number with OTP.");
+        response.put("message", "User registered successfully. OTP sent to your email. Please verify your phone number.");
         response.put("phoneNumber", user.getPhoneNumber());
+        response.put("email", user.getEmail());
         response.put("userId", user.getId());
 
         return response;
@@ -135,15 +136,16 @@ public class AuthService {
     }
 
     public Map<String, Object> resendOtp(String phoneNumber) {
-        // Check if user exists and generate new OTP
-        userService.getUserByPhoneNumber(phoneNumber);
+        // Check if user exists and get their email
+        User user = userService.getUserByPhoneNumber(phoneNumber);
         
-        // Generate and send new OTP
-        otpService.generateAndSendOtp(phoneNumber);
+        // Generate and send new OTP via Email
+        otpService.generateAndSendOtp(phoneNumber, user.getEmail());
 
         Map<String, Object> response = new HashMap<>();
-        response.put("message", "OTP sent successfully");
+        response.put("message", "OTP sent successfully to your email");
         response.put("phoneNumber", phoneNumber);
+        response.put("email", user.getEmail());
 
         return response;
     }

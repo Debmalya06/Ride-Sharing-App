@@ -33,6 +33,7 @@ public class DriverWithRatingDto {
     private String vehiclePlateNumber;
     private Boolean isVerified;
     private String verificationStatus;
+    private String rejectionReason;
     
     // Rating Information
     private Double averageRating;

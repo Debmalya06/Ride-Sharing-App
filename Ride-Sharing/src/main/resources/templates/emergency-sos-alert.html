@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emergency SOS Alert</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+            border-radius: 10px 10px 0 0;
+        }
+        .alert-icon {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+        .content {
+            background: #fff;
+            padding: 30px;
+            border: 3px solid #dc2626;
+            border-top: none;
+        }
+        .urgent {
+            background: #fee2e2;
+            border-left: 4px solid #dc2626;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .info-box {
+            background: #f3f4f6;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+        .info-label {
+            font-weight: bold;
+            color: #6b7280;
+            font-size: 12px;
+            text-transform: uppercase;
+        }
+        .info-value {
+            font-size: 16px;
+            color: #111827;
+            margin-top: 5px;
+        }
+        .location-btn {
+            display: inline-block;
+            background: #2563eb;
+            color: white !important;
+            padding: 15px 30px;
+            text-decoration: none;
+            border-radius: 8px;
+            margin: 10px 5px;
+            font-weight: bold;
+        }
+        .track-btn {
+            background: #dc2626;
+        }
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #6b7280;
+            font-size: 12px;
+        }
+        .ride-details {
+            background: #fef3c7;
+            border-left: 4px solid #f59e0b;
+            padding: 15px;
+            margin: 15px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="alert-icon">🚨</div>
+        <h1>EMERGENCY ALERT</h1>
+        <p>Immediate Action Required</p>
+    </div>
+    
+    <div class="content">
+        <p>Dear <strong th:text="${contactName}">Contact Name</strong>,</p>
+        
+        <div class="urgent">
+            <h2 style="margin-top: 0; color: #dc2626;">⚠️ Someone needs your help!</h2>
+            <p style="margin-bottom: 0;">
+                <strong th:text="${userName}">User Name</strong> has triggered an emergency SOS alert.
+                Please contact them immediately or check their location.
+            </p>
+        </div>
+        
+        <h3>Person in Distress:</h3>
+        <div class="info-box">
+            <div class="info-label">Name</div>
+            <div class="info-value" th:text="${userName}">User Name</div>
+        </div>
+        
+        <div class="info-box">
+            <div class="info-label">Phone Number</div>
+            <div class="info-value" th:text="${userPhone}">Phone</div>
+        </div>
+        
+        <div class="info-box">
+            <div class="info-label">Alert Time</div>
+            <div class="info-value" th:text="${alertTime}">Time</div>
+        </div>
+        
+        <div class="info-box">
+            <div class="info-label">Message</div>
+            <div class="info-value" th:text="${message}">Message</div>
+        </div>
+        
+        <h3>📍 Location Information:</h3>
+        <div class="info-box">
+            <div class="info-label">Coordinates</div>
+            <div class="info-value">
+                Latitude: <span th:text="${latitude}">0.0</span><br/>
+                Longitude: <span th:text="${longitude}">0.0</span>
+            </div>
+        </div>
+        
+        <div th:if="${hasRide}" class="ride-details">
+            <h3 style="margin-top: 0;">🚗 Active Ride Details:</h3>
+            <p>
+                <strong>Route:</strong> <span th:text="${rideSource}">Source</span> → <span th:text="${rideDestination}">Destination</span><br/>
+                <strong>Driver:</strong> <span th:text="${driverName}">Driver Name</span><br/>
+                <strong>Driver Phone:</strong> <span th:text="${driverPhone}">Driver Phone</span><br/>
+                <strong>Vehicle:</strong> <span th:text="${vehicleModel}">Model</span> - <span th:text="${vehiclePlate}">Plate</span>
+            </p>
+        </div>
+        
+        <div style="text-align: center; margin: 30px 0;">
+            <a th:href="${locationLink}" class="location-btn">
+                📍 View Location on Map
+            </a>
+            <a th:href="${trackingLink}" class="location-btn track-btn">
+                🔴 Track Live (1 hour)
+            </a>
+        </div>
+        
+        <div style="background: #fef3c7; padding: 15px; border-radius: 8px; margin-top: 20px;">
+            <h4 style="margin-top: 0; color: #92400e;">⏰ Immediate Actions:</h4>
+            <ol style="margin: 10px 0;">
+                <li>Call <strong th:text="${userName}">User</strong> immediately at <strong th:text="${userPhone}">Phone</strong></li>
+                <li>Check their live location using the tracking link</li>
+                <li>If unable to reach, contact local authorities</li>
+                <li>The live tracking link is valid for 1 hour</li>
+            </ol>
+        </div>
+        
+        <p style="margin-top: 30px; font-size: 12px; color: #6b7280;">
+            This is an automated emergency alert from SmartRide. If you believe this is a false alarm,
+            please contact the person immediately to confirm their safety.
+        </p>
+    </div>
+    
+    <div class="footer">
+        <p>SmartRide Emergency Alert System</p>
+        <p>This email was sent because you are listed as an emergency contact.</p>
+    </div>
+</body>
+</html>

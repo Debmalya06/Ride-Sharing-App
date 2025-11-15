@@ -73,7 +73,9 @@ class ApiService {
       console.log('Parsed response data:', data)
       
       if (!response.ok) {
-        throw new Error(data.message || data || `HTTP error! status: ${response.status}`)
+        const errorMessage = data.message || data.error || JSON.stringify(data) || `HTTP error! status: ${response.status}`
+        console.error('API Error:', errorMessage)
+        throw new Error(errorMessage)
       }
       
       return data
@@ -81,6 +83,36 @@ class ApiService {
       console.error('API call failed:', error)
       throw error
     }
+  }
+
+  // Generic GET method
+  async get(endpoint) {
+    return this.apiCall(endpoint, {
+      method: 'GET'
+    })
+  }
+
+  // Generic POST method
+  async post(endpoint, data) {
+    return this.apiCall(endpoint, {
+      method: 'POST',
+      body: JSON.stringify(data)
+    })
+  }
+
+  // Generic PUT method
+  async put(endpoint, data) {
+    return this.apiCall(endpoint, {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    })
+  }
+
+  // Generic DELETE method
+  async delete(endpoint) {
+    return this.apiCall(endpoint, {
+      method: 'DELETE'
+    })
   }
 
   // Test backend connection
@@ -483,6 +515,13 @@ class ApiService {
   // Admin: Reject driver verification
   async adminRejectDriver(driverDetailId) {
     return this.apiCall(`/admin/drivers/${driverDetailId}/reject`, {
+      method: 'PUT'
+    })
+  }
+
+  // Admin: Reject driver with reason
+  async adminRejectDriverWithReason(driverDetailId, reason) {
+    return this.apiCall(`/admin/drivers/${driverDetailId}/reject?reason=${encodeURIComponent(reason)}`, {
       method: 'PUT'
     })
   }
