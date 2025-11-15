@@ -170,6 +170,7 @@
 				</configuration>
 			</plugin>
 		</plugins>
+		<finalName>ride-sharing-app</finalName>
 	</build>
 
 </project>

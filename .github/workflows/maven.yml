@@ -1,4 +1,4 @@
-name: Java CI with Maven
+name: Build & Push Docker Image
 
 on:
   push:
@@ -8,24 +8,32 @@ on:
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
 
     steps:
+      # Checkout code
       - uses: actions/checkout@v4
 
+      # Setup Java
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
           java-version: '21'
-          distribution: 'temurin'
+          distribution: temurin
           cache: maven
 
+      # Build Spring Boot JAR
       - name: Build with Maven (skip tests)
         working-directory: Ride-Sharing
         run: mvn -B package -DskipTests
 
-      # - name: Update dependency graph
-      #   uses: advanced-security/maven-dependency-submission-action@v1
-      #   with:
-      #     directory: Ride-Sharing
+      # Build & Push Docker Image using mr-smithers-excellent
+      - name: Build & Push Docker image
+        uses: mr-smithers-excellent/docker-build-push@v5
+        with:
+          image: debmalya06/ride-sharing-app
+          tags: latest
+          registry: docker.io
+          dockerfile: Ride-Sharing/Dockerfile
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}

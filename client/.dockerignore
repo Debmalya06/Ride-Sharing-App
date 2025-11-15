@@ -1,0 +1,54 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Dependencies
+node_modules/
+npm-debug.log
+npm-debug.log.*
+yarn-error.log
+yarn-debug.log
+
+# Build
+build/
+dist/
+*.tsbuildinfo
+.turbo
+
+# IDE
+.idea/
+.vscode/
+*.iml
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Environment
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Testing
+**/__tests__/
+**/*.test.js
+**/*.spec.js
+coverage/
+.nyc_output/
+
+# Documentation
+*.md
+docs/
+README*
+
+# Temporary
+tmp/
+temp/
+.cache/
+
+# OS
+.DS_Store
+Thumbs.db

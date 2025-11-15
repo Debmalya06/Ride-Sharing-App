@@ -1,0 +1,139 @@
+version: '3.8'
+
+services:
+  # MySQL Database
+  mysql:
+    image: mysql:8.0-alpine
+    container_name: ride-sharing-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-root_password}
+      MYSQL_DATABASE: ${DB_NAME:-Ride_Sharing}
+      MYSQL_USER: ${DB_USERNAME:-ride_user}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-secure_password}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - ride-sharing-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # Spring Boot Backend
+  backend:
+    build:
+      context: ./Ride-Sharing
+      dockerfile: Dockerfile
+    container_name: ride-sharing-backend
+    environment:
+      # Database Configuration
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/${DB_NAME:-Ride_Sharing}?createDatabaseIfNotExist=true
+      SPRING_DATASOURCE_USERNAME: ${DB_USERNAME:-ride_user}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-secure_password}
+      
+      # JPA Configuration
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_JPA_DATABASE_PLATFORM: org.hibernate.dialect.MySQL8Dialect
+      
+      # JWT Configuration
+      JWT_SECRET: ${JWT_SECRET:-your-secret-key-change-in-production}
+      JWT_EXPIRATION: 86400000
+      JWT_REFRESH_EXPIRATION: 604800000
+      
+      # Email Configuration (SMTP)
+      SPRING_MAIL_HOST: ${MAIL_HOST:-smtp.gmail.com}
+      SPRING_MAIL_PORT: ${MAIL_PORT:-587}
+      SPRING_MAIL_USERNAME: ${MAIL_USERNAME:-your-email@gmail.com}
+      SPRING_MAIL_PASSWORD: ${MAIL_PASSWORD:-your-app-password}
+      SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH: "true"
+      SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE: "true"
+      SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_REQUIRED: "true"
+      SPRING_MAIL_PROPERTIES_MAIL_SMTP_SSL_PROTOCOLS: TLSv1.2
+      
+      # Email Settings
+      APP_EMAIL_FROM: ${APP_EMAIL_FROM:-SmartRide <noreply@smartride.com>}
+      APP_EMAIL_SUPPORT: ${APP_EMAIL_SUPPORT:-support@smartride.com}
+      
+      # Razorpay Configuration
+      RAZORPAY_KEY_ID: ${RAZORPAY_KEY_ID:-rzp_test_xxxxx}
+      RAZORPAY_KEY_SECRET: ${RAZORPAY_KEY_SECRET:-test_secret}
+      RAZORPAY_CURRENCY: INR
+      RAZORPAY_COMPANY_NAME: SmartRide
+      
+      # Platform Commission
+      APP_PLATFORM_COMMISSION: "10.0"
+      
+      # Distance Calculator Mode
+      DISTANCE_CALCULATOR_MODE: FREE_OPENSTREETMAP
+      
+      # Fare Configuration
+      APP_FARE_BASE: "50.00"
+      APP_FARE_RATE_PER_KM: "3.00"
+      APP_FARE_MIN_FARE: "50.00"
+      APP_FARE_MAX_FARE: "5000.00"
+      APP_FARE_CURRENCY: INR
+      
+      # Ride Reminder Configuration
+      APP_REMINDERS_SCHEDULING_ENABLED: "true"
+      APP_REMINDERS_RETRY_MAX_ATTEMPTS: "3"
+      APP_REMINDERS_EMAIL_ENABLED: "true"
+      APP_REMINDERS_SMS_ENABLED: "false"
+      
+      # Scheduling
+      SPRING_TASK_SCHEDULING_ENABLED: "true"
+      
+      # Test Controllers
+      APP_TEST_CONTROLLERS_ENABLED: "true"
+      
+      # Emergency SOS Configuration
+      APP_BASE_URL: ${APP_BASE_URL:-http://localhost:5173}
+      
+      # Java Options
+      JAVA_OPTS: -Xms512m -Xmx1024m
+      SERVER_PORT: 8080
+    ports:
+      - "8080:8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - ride-sharing-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/test"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # React Frontend
+  frontend:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    container_name: ride-sharing-frontend
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - backend
+    networks:
+      - ride-sharing-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  mysql_data:
+    driver: local
+
+networks:
+  ride-sharing-network:
+    driver: bridge
