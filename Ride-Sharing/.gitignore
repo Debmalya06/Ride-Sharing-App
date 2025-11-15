@@ -5,8 +5,8 @@ target/
 !**/src/test/**/target/
 
 # Configuration files with sensitive data
-src/main/resources/application.properties
-src/main/resources/application-*.properties
+src/main/resources/application.properties.tem
+src/main/resources/application-*.properties.tem
 
 # Firebase credentials and keys (NEVER commit these!)
 src/main/resources/*firebase*.json

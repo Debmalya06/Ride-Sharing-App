@@ -23,8 +23,8 @@ client/node_modules/
 # Configuration files with sensitive data
 **/application.properties
 Ride-Sharing/src/main/resources/application.properties
-application.properties
-**/application-*.properties
+application.properties.tem
+**/application-*.properties.tem
 
 # Firebase credentials and keys (NEVER commit these!)
 **/*firebase*.json
