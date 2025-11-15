@@ -6,10 +6,12 @@ target/
 
 # Configuration files with sensitive data
 # application.properties is committed with placeholders only
-# Ignore local overrides only
+# Ignore local overrides and temporary files
 src/main/resources/application-local.properties
 src/main/resources/application-prod.properties
 src/main/resources/application-*.local.properties
+src/main/resources/application.properties.tem
+src/main/resources/application.properties.temp
 
 # Firebase credentials and keys (NEVER commit these!)
 src/main/resources/*firebase*.json

@@ -26,8 +26,12 @@ client/node_modules/
 **/application-local.properties
 **/application-prod.properties
 **/application-*.local.properties
+**/application.properties.tem
+**/application.properties.temp
 Ride-Sharing/src/main/resources/application-local.properties
 Ride-Sharing/src/main/resources/application-prod.properties
+Ride-Sharing/src/main/resources/application.properties.tem
+Ride-Sharing/src/main/resources/application.properties.temp
 
 # Firebase credentials and keys (NEVER commit these!)
 **/*firebase*.json
