@@ -37,7 +37,8 @@ jobs:
           dockerfile: Ride-Sharing/Dockerfile
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-       #Trigger render deploy   
+
+      # Trigger render deploy
       - name: Trigger Render Deploy
-          run: curl -X POST "${{ secrets.HOOK_URL }}"
+        run: curl -X POST "${{ secrets.HOOK_URL }}"
   
