@@ -245,6 +245,7 @@ const RegisterPage = ({ onLogin }) => {
     return (
       <OtpVerification
         phoneNumber={registeredPhone}
+        userEmail={formData.email}
         userType={selectedType}
         onVerificationSuccess={handleOtpVerificationSuccess}
       />

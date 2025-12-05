@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { Car, Phone, Clock, RotateCcw, CheckCircle, AlertCircle } from 'lucide-react'
 import apiService from '../services/api'
 
-const OtpVerification = ({ phoneNumber, userType, onVerificationSuccess }) => {
+const OtpVerification = ({ phoneNumber, userEmail, userType, onVerificationSuccess }) => {
   const [otp, setOtp] = useState(['', '', '', '', '', ''])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -144,8 +144,8 @@ const OtpVerification = ({ phoneNumber, userType, onVerificationSuccess }) => {
           </Link>
           <h2 className="text-3xl font-bold text-gray-900 mb-2">Verify Your Phone</h2>
           <p className="text-gray-600">
-            We've sent a 6-digit code to{' '}
-            <span className="font-semibold text-gray-900">{phoneNumber}</span>
+            We've sent a 6-digit code to your email{' '}
+            <span className="font-semibold text-gray-900">{userEmail}</span>
           </p>
         </div>
 
@@ -220,15 +220,20 @@ const OtpVerification = ({ phoneNumber, userType, onVerificationSuccess }) => {
           </div>
         </div>
 
-        <div className="text-center">
+        <div className="text-center space-y-3">
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+            <p className="text-xs text-blue-700">
+              💡 <strong>Tip:</strong> OTP emails may take 1-2 minutes. Check your spam/junk folder.
+            </p>
+          </div>
           <p className="text-sm text-gray-600">
-            Didn't receive the code? Check your SMS or{' '}
+            Didn't receive the code? {' '}
             <button
               onClick={handleResendOtp}
               disabled={!canResend}
               className="text-yellow-600 hover:text-yellow-500 disabled:text-gray-400 font-medium"
             >
-              try again
+              resend to {userEmail}
             </button>
           </p>
         </div>

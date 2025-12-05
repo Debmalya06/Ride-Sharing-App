@@ -90,7 +90,10 @@ public class OtpEmailService {
                 // Log email failure but allow registration to continue
                 logger.warn("⚠️ Failed to send OTP email to {}: {}. OTP is available in console/database.", 
                            email, emailError.getMessage());
+                logger.warn("📧 Email Error Details: {}", emailError.toString());
                 logger.info("📧 OTP has been saved to database. User can verify with console OTP or retry email.");
+                // Print OTP again for manual testing
+                System.out.println("📌 DEBUG: OTP for " + phoneNumber + " = " + otp);
             }
 
         } catch (Exception e) {
