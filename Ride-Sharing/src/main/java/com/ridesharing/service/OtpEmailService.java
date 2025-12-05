@@ -82,10 +82,16 @@ public class OtpEmailService {
             // Print OTP to console for development/testing
             printMockOtp(phoneNumber, otp, email);
             
-            // Send OTP via Email
-            sendOtpViaEmail(phoneNumber, otp, email);
-            
-            logger.info("✅ OTP generated, printed to console, and sent to email: {}", email);
+            // Send OTP via Email (graceful failure - log but don't block registration)
+            try {
+                sendOtpViaEmail(phoneNumber, otp, email);
+                logger.info("✅ OTP generated and sent to email: {}", email);
+            } catch (Exception emailError) {
+                // Log email failure but allow registration to continue
+                logger.warn("⚠️ Failed to send OTP email to {}: {}. OTP is available in console/database.", 
+                           email, emailError.getMessage());
+                logger.info("📧 OTP has been saved to database. User can verify with console OTP or retry email.");
+            }
 
         } catch (Exception e) {
             logger.error("❌ Error generating OTP: ", e);
