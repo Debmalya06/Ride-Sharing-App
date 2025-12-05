@@ -34,7 +34,9 @@ public class UserService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String phoneNumber) throws UsernameNotFoundException {
-        User user = userRepository.findByPhoneNumberAndIsActiveTrue(phoneNumber)
+        // Try to find user with phone number, regardless of active status for authentication
+        // This allows login even if user hasn't verified yet
+        User user = userRepository.findByPhoneNumber(phoneNumber)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found with phone number: " + phoneNumber));
 
         return UserPrincipal.create(user);

@@ -10,7 +10,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 @Entity
-@Table(name = "users")
+@Table(name = "usersdetail")
 public class User implements UserDetails {
 
     @Id
@@ -100,7 +100,7 @@ public class User implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return isActive && isVerified;
+        return isActive;
     }
 
     // Getters and Setters
