@@ -992,42 +992,170 @@ const PassengerDashboard = ({ user }) => {
               </div>
             </div>
           )}
-          
-          {/* Left Panel - Search Form */}
-          <div className="w-full lg:w-2/5 bg-white border-r border-gray-200 overflow-y-auto">
+
+          {/* MOBILE LAYOUT: Map First (1/3), then Filters & Rides (2/3) - Hidden on Desktop */}
+          <div className="lg:hidden flex flex-col h-full w-full">
+            {/* Map Section - Mobile */}
+            <div className="h-1/3 bg-gray-200 relative z-0">
+              <MapContainer
+                center={mapCenter}
+                zoom={mapZoom}
+                style={{ height: '100%', width: '100%' }}
+              >
+                <TileLayer
+                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                  attribution='&copy; OpenStreetMap contributors'
+                />
+                {fromCoords && (
+                  <Marker position={[fromCoords.lat, fromCoords.lng]} icon={greenIcon}>
+                    <Popup><strong>Pickup</strong><br />{searchFilters.from}</Popup>
+                  </Marker>
+                )}
+                {toCoords && (
+                  <Marker position={[toCoords.lat, toCoords.lng]} icon={redIcon}>
+                    <Popup><strong>Dropoff</strong><br />{searchFilters.to}</Popup>
+                  </Marker>
+                )}
+                {fromCoords && toCoords && (
+                  <Polyline
+                    positions={[[fromCoords.lat, fromCoords.lng], [toCoords.lat, toCoords.lng]]}
+                    color="#EAB308" weight={3} opacity={0.8} dashArray="10,10"
+                  />
+                )}
+              </MapContainer>
+              <button 
+                onClick={() => { setMapCenter([22.5726, 88.3639]); setMapZoom(12) }}
+                className="absolute top-2 right-2 bg-white p-2 rounded-lg shadow-md hover:shadow-lg z-10"
+              >
+                <RefreshCw className="h-4 w-4 text-gray-600" />
+              </button>
+            </div>
+
+            {/* Search Filters & Rides - Mobile Scrollable */}
+            <div className="flex-1 overflow-y-auto bg-white">
+              <div className="p-3 space-y-3">
+                {/* Search Form - Compact */}
+                <div className="bg-yellow-50 rounded-lg p-3 space-y-2">
+                  <h3 className="text-sm font-semibold text-gray-800">Search Rides</h3>
+                  <div className="relative">
+                    <div className="absolute left-3 top-2">
+                      <div className="w-2.5 h-2.5 bg-green-500 rounded-full"></div>
+                    </div>
+                    <input type="text" placeholder="From" value={searchFilters.from} onChange={handleFromInputChange} onFocus={() => setShowFromSuggestions(searchFilters.from.length > 0)} onBlur={() => setTimeout(() => setShowFromSuggestions(false), 200)} className="w-full pl-8 pr-8 py-2 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500" />
+                    {showFromSuggestions && (
+                      <div className="absolute z-20 w-full bg-white border border-gray-200 rounded-lg mt-1 shadow-lg max-h-24 overflow-y-auto">
+                        {getFilteredSuggestions(searchFilters.from).map((location, index) => (
+                          <button key={index} onClick={() => handleLocationSelect(location, 'from')} className="w-full text-left px-3 py-1 hover:bg-gray-100 text-xs flex items-center gap-1">
+                            <MapPin className="h-3 w-3 text-gray-400 flex-shrink-0" /><span className="truncate">{location}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <div className="relative">
+                    <div className="absolute left-3 top-2">
+                      <div className="w-2.5 h-2.5 bg-red-500 rounded-full"></div>
+                    </div>
+                    <input type="text" placeholder="To" value={searchFilters.to} onChange={handleToInputChange} onFocus={() => setShowToSuggestions(searchFilters.to.length > 0)} onBlur={() => setTimeout(() => setShowToSuggestions(false), 200)} className="w-full pl-8 pr-8 py-2 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500" />
+                    {showToSuggestions && (
+                      <div className="absolute z-20 w-full bg-white border border-gray-200 rounded-lg mt-1 shadow-lg max-h-24 overflow-y-auto">
+                        {getFilteredSuggestions(searchFilters.to).map((location, index) => (
+                          <button key={index} onClick={() => handleLocationSelect(location, 'to')} className="w-full text-left px-3 py-1 hover:bg-gray-100 text-xs flex items-center gap-1">
+                            <MapPin className="h-3 w-3 text-gray-400 flex-shrink-0" /><span className="truncate">{location}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <input type="date" value={searchFilters.date} onChange={(e) => setSearchFilters(prev => ({ ...prev, date: e.target.value }))} className="px-2 py-2 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500" />
+                    <input type="number" placeholder="Max ₹" value={searchFilters.maxPrice} onChange={(e) => setSearchFilters(prev => ({ ...prev, maxPrice: e.target.value }))} className="px-2 py-2 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500" />
+                  </div>
+                  <button onClick={handleSearch} disabled={loading || !searchFilters.from || !searchFilters.to} className="w-full bg-yellow-500 text-white py-2 rounded-lg font-medium text-xs hover:bg-yellow-600 disabled:bg-gray-300">
+                    {loading ? 'Searching...' : 'Search'}
+                  </button>
+                </div>
+
+                {/* Available Rides - Mobile */}
+                {searchPerformed && (
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <h3 className="text-sm font-semibold">Available Rides ({Array.isArray(availableRides) ? availableRides.length : 0})</h3>
+                      <button onClick={fetchAvailableRides} disabled={loading} className="text-gray-600 hover:text-gray-900 disabled:text-gray-300">
+                        <RefreshCw className="h-4 w-4" />
+                      </button>
+                    </div>
+                    {error && <div className="bg-red-50 border border-red-200 rounded-lg p-2 text-red-700 text-xs">{error}</div>}
+                    {!loading && Array.isArray(availableRides) && availableRides.length === 0 && searchPerformed && (
+                      <div className="text-center py-4 text-gray-500 bg-gray-50 rounded-lg">
+                        <Car className="h-8 w-8 mx-auto mb-1 text-gray-300" />
+                        <p className="text-xs">No rides found</p>
+                      </div>
+                    )}
+                    {!loading && Array.isArray(availableRides) && availableRides.map((ride) => (
+                      <div key={ride.id} className="bg-white border border-gray-200 rounded-lg p-2 hover:shadow-md transition-shadow">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-1 mb-1 text-xs">
+                              <div className="w-2 h-2 bg-green-500 rounded-full flex-shrink-0"></div>
+                              <span className="font-medium truncate">{ride.source || 'N/A'}</span>
+                              <span className="text-gray-400 flex-shrink-0">→</span>
+                              <div className="w-2 h-2 bg-red-500 rounded-full flex-shrink-0"></div>
+                              <span className="font-medium truncate">{ride.destination || 'N/A'}</span>
+                            </div>
+                            <div className="flex flex-wrap gap-2 text-xs text-gray-600">
+                              <span className="flex items-center gap-0.5"><Calendar className="h-3 w-3" />{ride.departureDate ? new Date(ride.departureDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) : 'N/A'}</span>
+                              <span className="flex items-center gap-0.5"><Clock className="h-3 w-3" />{ride.departureDate ? new Date(ride.departureDate).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true }) : 'N/A'}</span>
+                              <span className="flex items-center gap-0.5"><Users className="h-3 w-3" />{ride.availableSeats || 0}</span>
+                            </div>
+                          </div>
+                          <div className="text-right flex-shrink-0">
+                            <div className="text-sm font-bold">₹{ride.pricePerSeat || 0}</div>
+                            <button onClick={() => { setSelectedSeats({ [ride.id]: 1 }); handleBooking(ride, 1) }} disabled={loading} className="text-xs bg-yellow-500 text-white px-2 py-1 rounded mt-1 hover:bg-yellow-600 disabled:bg-gray-300">Book</button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* DESKTOP LAYOUT - Left Panel - Search Form (Hidden on Mobile) */}
+          <div className="hidden lg:block w-2/5 bg-white border-r border-gray-200 overflow-y-auto">
             <div className="p-4 sm:p-6">
               <h2 className="text-lg sm:text-xl font-semibold mb-4 sm:mb-6">Get ready for your first trip</h2>
               <p className="text-sm sm:text-base text-gray-600 mb-6 sm:mb-8">Discover the convenience of SmartRide. Request a ride now, or schedule one for later directly from your browser.</p>
               
               {/* Search Form */}
               <div className="space-y-4">
+                {/* From Location */}
                 <div className="relative">
-                  <div className="relative">
-                    <div className="absolute left-3 top-3">
-                      <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                    </div>
-                    <input
-                      type="text"
-                      placeholder="Pickup location"
-                      value={searchFilters.from}
-                      onChange={handleFromInputChange}
-                      onFocus={() => setShowFromSuggestions(searchFilters.from.length > 0)}
-                      onBlur={() => setTimeout(() => setShowFromSuggestions(false), 200)}
-                      className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
-                    />
-                    {geocodingLoading.from && (
-                      <div className="absolute right-3 top-3">
-                        <div className="animate-spin w-4 h-4 border-2 border-gray-300 border-t-yellow-500 rounded-full"></div>
-                      </div>
-                    )}
-                    {!geocodingLoading.from && fromCoords && (
-                      <div className="absolute right-3 top-3">
-                        <div className="w-4 h-4 bg-green-500 rounded-full flex items-center justify-center">
-                          <div className="w-2 h-2 bg-white rounded-full"></div>
-                        </div>
-                      </div>
-                    )}
+                  <div className="absolute left-3 top-3">
+                    <div className="w-3 h-3 bg-green-500 rounded-full"></div>
                   </div>
+                  <input
+                    type="text"
+                    placeholder="Pickup location"
+                    value={searchFilters.from}
+                    onChange={handleFromInputChange}
+                    onFocus={() => setShowFromSuggestions(searchFilters.from.length > 0)}
+                    onBlur={() => setTimeout(() => setShowFromSuggestions(false), 200)}
+                    className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                  />
+                  {geocodingLoading.from && (
+                    <div className="absolute right-3 top-3">
+                      <div className="animate-spin w-4 h-4 border-2 border-gray-300 border-t-yellow-500 rounded-full"></div>
+                    </div>
+                  )}
+                  {!geocodingLoading.from && fromCoords && (
+                    <div className="absolute right-3 top-3">
+                      <div className="w-4 h-4 bg-green-500 rounded-full flex items-center justify-center">
+                        <div className="w-2 h-2 bg-white rounded-full"></div>
+                      </div>
+                    </div>
+                  )}
                   {/* From Suggestions Dropdown */}
                   {showFromSuggestions && (
                     <div className="absolute z-10 w-full bg-white border border-gray-200 rounded-lg mt-1 shadow-lg max-h-48 overflow-y-auto">
@@ -1045,33 +1173,32 @@ const PassengerDashboard = ({ user }) => {
                   )}
                 </div>
                 
+                {/* To Location */}
                 <div className="relative">
-                  <div className="relative">
-                    <div className="absolute left-3 top-3">
-                      <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                    </div>
-                    <input
-                      type="text"
-                      placeholder="Dropoff location"
-                      value={searchFilters.to}
-                      onChange={handleToInputChange}
-                      onFocus={() => setShowToSuggestions(searchFilters.to.length > 0)}
-                      onBlur={() => setTimeout(() => setShowToSuggestions(false), 200)}
-                      className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
-                    />
-                    {geocodingLoading.to && (
-                      <div className="absolute right-3 top-3">
-                        <div className="animate-spin w-4 h-4 border-2 border-gray-300 border-t-yellow-500 rounded-full"></div>
-                      </div>
-                    )}
-                    {!geocodingLoading.to && toCoords && (
-                      <div className="absolute right-3 top-3">
-                        <div className="w-4 h-4 bg-green-500 rounded-full flex items-center justify-center">
-                          <div className="w-2 h-2 bg-white rounded-full"></div>
-                        </div>
-                      </div>
-                    )}
+                  <div className="absolute left-3 top-3">
+                    <div className="w-3 h-3 bg-red-500 rounded-full"></div>
                   </div>
+                  <input
+                    type="text"
+                    placeholder="Dropoff location"
+                    value={searchFilters.to}
+                    onChange={handleToInputChange}
+                    onFocus={() => setShowToSuggestions(searchFilters.to.length > 0)}
+                    onBlur={() => setTimeout(() => setShowToSuggestions(false), 200)}
+                    className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                  />
+                  {geocodingLoading.to && (
+                    <div className="absolute right-3 top-3">
+                      <div className="animate-spin w-4 h-4 border-2 border-gray-300 border-t-yellow-500 rounded-full"></div>
+                    </div>
+                  )}
+                  {!geocodingLoading.to && toCoords && (
+                    <div className="absolute right-3 top-3">
+                      <div className="w-4 h-4 bg-green-500 rounded-full flex items-center justify-center">
+                        <div className="w-2 h-2 bg-white rounded-full"></div>
+                      </div>
+                    </div>
+                  )}
                   {/* To Suggestions Dropdown */}
                   {showToSuggestions && (
                     <div className="absolute z-10 w-full bg-white border border-gray-200 rounded-lg mt-1 shadow-lg max-h-48 overflow-y-auto">
@@ -1089,6 +1216,7 @@ const PassengerDashboard = ({ user }) => {
                   )}
                 </div>
                 
+                {/* Date and Price */}
                 <div className="grid grid-cols-2 gap-4">
                   <input
                     type="date"
@@ -1105,6 +1233,7 @@ const PassengerDashboard = ({ user }) => {
                   />
                 </div>
                 
+                {/* Search Button */}
                 <button
                   onClick={handleSearch}
                   disabled={loading || !searchFilters.from || !searchFilters.to}

@@ -65,23 +65,23 @@ const LandingPage = () => {
   }
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen overflow-x-hidden">
       {/* Initial Page Loading */}
       {isPageLoading && (
-        <div className="fixed inset-0 bg-gradient-to-br from-yellow-50 to-orange-50 flex flex-col items-center justify-center z-50 px-4">
+        <div className="fixed inset-0 bg-gradient-to-br from-yellow-50 to-orange-50 flex flex-col items-center justify-center z-50 px-4 safe-area-inset">
           <Loader 
-            size={200}
+            size={window.innerWidth < 640 ? 120 : 200}
             showText={false}
-            className="mb-6 sm:mb-8"
+            className="mb-4 sm:mb-6 md:mb-8"
           />
-          <div className="text-center max-w-lg mx-auto">
-            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-3 sm:mb-4">
+          <div className="text-center max-w-lg mx-auto px-2">
+            <h1 className="text-xl sm:text-2xl md:text-4xl font-bold text-gray-900 mb-2 sm:mb-3 md:mb-4 leading-tight">
               Welcome to <span className="text-yellow-500">SmartRide</span>
             </h1>
-            <p className="text-base sm:text-lg md:text-xl text-yellow-600 font-medium mb-2 animate-pulse">
+            <p className="text-sm sm:text-base md:text-xl text-yellow-600 font-medium mb-2 animate-pulse line-clamp-2">
               {quotes[currentQuote]}
             </p>
-            <div className="flex justify-center space-x-2 mt-6">
+            <div className="flex justify-center space-x-1.5 sm:space-x-2 mt-4 sm:mt-6">
               {quotes.map((_, index) => (
                 <div
                   key={index}
@@ -91,37 +91,37 @@ const LandingPage = () => {
                 />
               ))}
             </div>
-            <p className="text-xs sm:text-sm text-gray-500 mt-4">Loading your journey...</p>
+            <p className="text-xs sm:text-xs text-gray-500 mt-3 sm:mt-4">Loading your journey...</p>
           </div>
         </div>
       )}
 
       {/* Hero Section */}
-      <section className="bg-gradient-to-br from-yellow-50 to-orange-50 py-8 sm:py-12 md:py-16 lg:py-20 w-full">
-        <div className="w-full px-0 sm:px-0">
+      <section className="bg-gradient-to-br from-yellow-50 to-orange-50 py-6 sm:py-8 md:py-12 lg:py-20 w-full">
+        <div className="w-full px-0">
           <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 md:gap-8 lg:gap-12 items-center">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 md:gap-8 lg:gap-12 items-center">
               {/* Left Content */}
-              <div className="space-y-3 sm:space-y-4 md:space-y-6" data-aos="fade-right" data-aos-delay="100">
+              <div className="space-y-2 sm:space-y-3 md:space-y-6" data-aos="fade-right" data-aos-delay="100">
                 <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold text-gray-900 leading-tight" data-aos="fade-up" data-aos-delay="200">
                   Share Your Journey,{' '}
                   <span className="text-yellow-500">Save Money</span>
                 </h1>
-                <p className="text-sm sm:text-base md:text-lg lg:text-xl text-gray-600 leading-relaxed" data-aos="fade-up" data-aos-delay="300">
+                <p className="text-xs sm:text-sm md:text-lg lg:text-xl text-gray-600 leading-relaxed" data-aos="fade-up" data-aos-delay="300">
                   Connect with fellow travelers heading in the same direction. Split costs, reduce emissions, and make new connections on every trip.
                 </p>
-                <div className="flex flex-col xs:flex-col sm:flex-row gap-2 sm:gap-3 md:gap-4 pt-2" data-aos="fade-up" data-aos-delay="400">
+                <div className="flex flex-col gap-2 sm:gap-3 md:gap-4 pt-1 sm:pt-2 md:pt-4" data-aos="fade-up" data-aos-delay="400">
                   <button
                     onClick={() => handleSignUpClick('passenger')}
                     disabled={isLoading}
-                    className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 sm:px-6 md:px-8 py-2.5 sm:py-3 md:py-4 rounded-lg font-semibold text-sm sm:text-base md:text-lg transition-all duration-200 hover:shadow-lg text-center transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto"
+                    className="bg-yellow-500 hover:bg-yellow-600 active:scale-95 text-white px-4 sm:px-6 md:px-8 py-2.5 sm:py-3 md:py-4 rounded-lg font-semibold text-sm sm:text-base md:text-lg transition-all duration-200 hover:shadow-lg text-center transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed w-full min-h-11 sm:min-h-12 md:min-h-auto sm:w-auto flex items-center justify-center"
                   >
                     Find a Ride
                   </button>
                   <button
                     onClick={() => handleSignUpClick('driver')}
                     disabled={isLoading}
-                    className="border-2 border-yellow-500 text-yellow-600 hover:bg-yellow-500 hover:text-white px-4 sm:px-6 md:px-8 py-2.5 sm:py-3 md:py-4 rounded-lg font-semibold text-sm sm:text-base md:text-lg transition-all duration-200 text-center transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto"
+                    className="border-2 border-yellow-500 text-yellow-600 hover:bg-yellow-500 hover:text-white active:scale-95 px-4 sm:px-6 md:px-8 py-2.5 sm:py-3 md:py-4 rounded-lg font-semibold text-sm sm:text-base md:text-lg transition-all duration-200 text-center transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed w-full min-h-11 sm:min-h-12 md:min-h-auto sm:w-auto flex items-center justify-center"
                   >
                     Offer a Ride
                   </button>
@@ -145,11 +145,11 @@ const LandingPage = () => {
       </section>
 
       {/* Features Section */}
-      <section id="features" className="py-8 sm:py-12 md:py-16 lg:py-20 bg-white w-full">
+      <section id="features" className="py-6 sm:py-8 md:py-12 lg:py-20 bg-white w-full">
         <div className="w-full px-0">
           <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
-            <div className="text-center mb-6 sm:mb-8 md:mb-12 lg:mb-16" data-aos="fade-up">
-              <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-gray-900 mb-2 sm:mb-3 md:mb-4" data-aos="fade-up" data-aos-delay="100">
+            <div className="text-center mb-4 sm:mb-6 md:mb-10 lg:mb-16" data-aos="fade-up">
+              <h2 className="text-lg sm:text-2xl md:text-3xl lg:text-4xl font-bold text-gray-900 mb-2 sm:mb-2 md:mb-3" data-aos="fade-up" data-aos-delay="100">
                 Why Choose SmartRide?
               </h2>
               <p className="text-xs sm:text-sm md:text-base lg:text-lg text-gray-600 max-w-3xl mx-auto px-1" data-aos="fade-up" data-aos-delay="200">
@@ -157,69 +157,69 @@ const LandingPage = () => {
               </p>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3 md:gap-4">
               {/* Feature 1 */}
               <div className="bg-white p-3 sm:p-4 md:p-6 rounded-xl sm:rounded-2xl shadow-md hover:shadow-lg border border-gray-100 transition-all duration-300 transform hover:-translate-y-1 sm:hover:-translate-y-2" data-aos="fade-up" data-aos-delay="100">
-                <div className="bg-yellow-100 w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 rounded-full flex items-center justify-center mb-3 sm:mb-4 md:mb-6 transform transition-transform duration-300 hover:scale-110">
-                  <Shield className="h-6 w-6 sm:h-7 sm:w-7 md:h-8 md:w-8 text-yellow-600" />
+                <div className="bg-yellow-100 w-11 h-11 sm:w-12 sm:h-12 md:w-16 md:h-16 rounded-full flex items-center justify-center mb-2 sm:mb-3 md:mb-4 transform transition-transform duration-300 hover:scale-110">
+                  <Shield className="h-5 w-5 sm:h-6 sm:w-6 md:h-8 md:w-8 text-yellow-600" />
                 </div>
-                <h3 className="text-base sm:text-lg md:text-xl font-semibold text-gray-900 mb-1 sm:mb-2 md:mb-3">Verified Drivers</h3>
-                <p className="text-xs sm:text-sm md:text-base text-gray-600 leading-relaxed">
+                <h3 className="text-sm sm:text-base md:text-lg font-semibold text-gray-900 mb-1 md:mb-2">Verified Drivers</h3>
+                <p className="text-xs sm:text-sm text-gray-600 leading-relaxed">
                   All drivers are verified with valid licenses and vehicle documents for your safety.
                 </p>
               </div>
 
               {/* Feature 2 */}
               <div className="bg-white p-3 sm:p-4 md:p-6 rounded-xl sm:rounded-2xl shadow-md hover:shadow-lg border border-gray-100 transition-all duration-300 transform hover:-translate-y-1 sm:hover:-translate-y-2" data-aos="fade-up" data-aos-delay="200">
-                <div className="bg-yellow-100 w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 rounded-full flex items-center justify-center mb-3 sm:mb-4 md:mb-6 transform transition-transform duration-300 hover:scale-110">
-                  <CreditCard className="h-6 w-6 sm:h-7 sm:w-7 md:h-8 md:w-8 text-yellow-600" />
+                <div className="bg-yellow-100 w-11 h-11 sm:w-12 sm:h-12 md:w-16 md:h-16 rounded-full flex items-center justify-center mb-2 sm:mb-3 md:mb-4 transform transition-transform duration-300 hover:scale-110">
+                  <CreditCard className="h-5 w-5 sm:h-6 sm:w-6 md:h-8 md:w-8 text-yellow-600" />
                 </div>
-                <h3 className="text-base sm:text-lg md:text-xl font-semibold text-gray-900 mb-1 sm:mb-2 md:mb-3">Secure Payments</h3>
-                <p className="text-xs sm:text-sm md:text-base text-gray-600 leading-relaxed">
+                <h3 className="text-sm sm:text-base md:text-lg font-semibold text-gray-900 mb-1 md:mb-2">Secure Payments</h3>
+                <p className="text-xs sm:text-sm text-gray-600 leading-relaxed">
                   Safe and secure payment processing with multiple payment options available.
                 </p>
               </div>
 
               {/* Feature 3 */}
               <div className="bg-white p-3 sm:p-4 md:p-6 rounded-xl sm:rounded-2xl shadow-md hover:shadow-lg border border-gray-100 transition-all duration-300 transform hover:-translate-y-1 sm:hover:-translate-y-2" data-aos="fade-up" data-aos-delay="300">
-                <div className="bg-yellow-100 w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 rounded-full flex items-center justify-center mb-3 sm:mb-4 md:mb-6 transform transition-transform duration-300 hover:scale-110">
-                  <MapPin className="h-6 w-6 sm:h-7 sm:w-7 md:h-8 md:w-8 text-yellow-600" />
+                <div className="bg-yellow-100 w-11 h-11 sm:w-12 sm:h-12 md:w-16 md:h-16 rounded-full flex items-center justify-center mb-2 sm:mb-3 md:mb-4 transform transition-transform duration-300 hover:scale-110">
+                  <MapPin className="h-5 w-5 sm:h-6 sm:w-6 md:h-8 md:w-8 text-yellow-600" />
                 </div>
-                <h3 className="text-base sm:text-lg md:text-xl font-semibold text-gray-900 mb-1 sm:mb-2 md:mb-3">Smart Matching</h3>
-                <p className="text-xs sm:text-sm md:text-base text-gray-600 leading-relaxed">
+                <h3 className="text-sm sm:text-base md:text-lg font-semibold text-gray-900 mb-1 md:mb-2">Smart Matching</h3>
+                <p className="text-xs sm:text-sm text-gray-600 leading-relaxed">
                   Advanced algorithm matches you with rides based on your route and preferences.
                 </p>
               </div>
 
               {/* Feature 4 */}
               <div className="bg-white p-3 sm:p-4 md:p-6 rounded-xl sm:rounded-2xl shadow-md hover:shadow-lg border border-gray-100 transition-all duration-300 transform hover:-translate-y-1 sm:hover:-translate-y-2" data-aos="fade-up" data-aos-delay="100">
-                <div className="bg-yellow-100 w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 rounded-full flex items-center justify-center mb-3 sm:mb-4 md:mb-6 transform transition-transform duration-300 hover:scale-110">
-                  <Clock className="h-6 w-6 sm:h-7 sm:w-7 md:h-8 md:w-8 text-yellow-600" />
+                <div className="bg-yellow-100 w-11 h-11 sm:w-12 sm:h-12 md:w-16 md:h-16 rounded-full flex items-center justify-center mb-2 sm:mb-3 md:mb-4 transform transition-transform duration-300 hover:scale-110">
+                  <Clock className="h-5 w-5 sm:h-6 sm:w-6 md:h-8 md:w-8 text-yellow-600" />
                 </div>
-                <h3 className="text-base sm:text-lg md:text-xl font-semibold text-gray-900 mb-1 sm:mb-2 md:mb-3">Real-time Tracking</h3>
-                <p className="text-xs sm:text-sm md:text-base text-gray-600 leading-relaxed">
+                <h3 className="text-sm sm:text-base md:text-lg font-semibold text-gray-900 mb-1 md:mb-2">Real-time Tracking</h3>
+                <p className="text-xs sm:text-sm text-gray-600 leading-relaxed">
                   Track your ride in real-time and get updates on your journey progress.
                 </p>
               </div>
 
               {/* Feature 5 */}
               <div className="bg-white p-3 sm:p-4 md:p-6 rounded-xl sm:rounded-2xl shadow-md hover:shadow-lg border border-gray-100 transition-all duration-300 transform hover:-translate-y-1 sm:hover:-translate-y-2" data-aos="fade-up" data-aos-delay="200">
-                <div className="bg-yellow-100 w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 rounded-full flex items-center justify-center mb-3 sm:mb-4 md:mb-6 transform transition-transform duration-300 hover:scale-110">
-                  <Users className="h-6 w-6 sm:h-7 sm:w-7 md:h-8 md:w-8 text-yellow-600" />
+                <div className="bg-yellow-100 w-11 h-11 sm:w-12 sm:h-12 md:w-16 md:h-16 rounded-full flex items-center justify-center mb-2 sm:mb-3 md:mb-4 transform transition-transform duration-300 hover:scale-110">
+                  <Users className="h-5 w-5 sm:h-6 sm:w-6 md:h-8 md:w-8 text-yellow-600" />
                 </div>
-                <h3 className="text-base sm:text-lg md:text-xl font-semibold text-gray-900 mb-1 sm:mb-2 md:mb-3">User Reviews</h3>
-                <p className="text-xs sm:text-sm md:text-base text-gray-600 leading-relaxed">
+                <h3 className="text-sm sm:text-base md:text-lg font-semibold text-gray-900 mb-1 md:mb-2">User Reviews</h3>
+                <p className="text-xs sm:text-sm text-gray-600 leading-relaxed">
                   Rate and review your travel experience to help build a trusted community.
                 </p>
               </div>
 
               {/* Feature 6 */}
               <div className="bg-white p-3 sm:p-4 md:p-6 rounded-xl sm:rounded-2xl shadow-md hover:shadow-lg border border-gray-100 transition-all duration-300 transform hover:-translate-y-1 sm:hover:-translate-y-2" data-aos="fade-up" data-aos-delay="300">
-                <div className="bg-yellow-100 w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 rounded-full flex items-center justify-center mb-3 sm:mb-4 md:mb-6 transform transition-transform duration-300 hover:scale-110">
-                  <Briefcase className="h-6 w-6 sm:h-7 sm:w-7 md:h-8 md:w-8 text-yellow-600" />
+                <div className="bg-yellow-100 w-11 h-11 sm:w-12 sm:h-12 md:w-16 md:h-16 rounded-full flex items-center justify-center mb-2 sm:mb-3 md:mb-4 transform transition-transform duration-300 hover:scale-110">
+                  <Briefcase className="h-5 w-5 sm:h-6 sm:w-6 md:h-8 md:w-8 text-yellow-600" />
                 </div>
-                <h3 className="text-base sm:text-lg md:text-xl font-semibold text-gray-900 mb-1 sm:mb-2 md:mb-3">Flexible Booking</h3>
-                <p className="text-xs sm:text-sm md:text-base text-gray-600 leading-relaxed">
+                <h3 className="text-sm sm:text-base md:text-lg font-semibold text-gray-900 mb-1 md:mb-2">Flexible Booking</h3>
+                <p className="text-xs sm:text-sm text-gray-600 leading-relaxed">
                   Book rides instantly or schedule them in advance for your convenience.
                 </p>
               </div>
@@ -229,11 +229,11 @@ const LandingPage = () => {
       </section>
 
       {/* How It Works Section */}
-      <section id="how-it-works" className="py-8 sm:py-12 md:py-16 lg:py-20 bg-gray-50 w-full">
+      <section id="how-it-works" className="py-6 sm:py-8 md:py-12 lg:py-20 bg-gray-50 w-full">
         <div className="w-full px-0">
           <div className="max-w-5xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
-            <div className="text-center mb-6 sm:mb-8 md:mb-12 lg:mb-16" data-aos="fade-up">
-              <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-gray-900 mb-2 sm:mb-3 md:mb-4" data-aos="fade-up" data-aos-delay="100">
+            <div className="text-center mb-4 sm:mb-6 md:mb-10 lg:mb-16" data-aos="fade-up">
+              <h2 className="text-lg sm:text-2xl md:text-3xl lg:text-4xl font-bold text-gray-900 mb-2 sm:mb-2 md:mb-3" data-aos="fade-up" data-aos-delay="100">
                 How SmartRide Works
               </h2>
               <p className="text-xs sm:text-sm md:text-base lg:text-lg text-gray-600 max-w-3xl mx-auto px-1" data-aos="fade-up" data-aos-delay="200">
@@ -241,32 +241,33 @@ const LandingPage = () => {
               </p>
             </div>
 
-            <div className="space-y-8 sm:space-y-10 md:space-y-12 lg:space-y-16">
-              {/* Step 1 - Sign Up */}
-            <div className="flex flex-col lg:flex-row items-center gap-6 sm:gap-8 md:gap-12">
+            <div className="space-y-6 sm:space-y-8 md:space-y-10 lg:space-y-16">
+            {/* Step 1 - Sign Up */}
+            <div className="flex flex-col lg:flex-row items-center gap-4 sm:gap-6 md:gap-8">
               <div className="w-full lg:w-1/2" data-aos="fade-right" data-aos-delay="100">
                 <div className="relative">
                   <img
                     src="sign.jpg"
                     alt="Person signing up on mobile phone"
-                    className="w-full h-56 sm:h-72 md:h-80 object-cover rounded-2xl shadow-lg transform hover:scale-105 transition-transform duration-300"
+                    className="w-full h-44 sm:h-56 md:h-72 lg:h-80 object-cover rounded-2xl shadow-lg transform hover:scale-105 transition-transform duration-300"
+                    loading="lazy"
                   />
-                  <div className="absolute -top-3 sm:-top-4 -left-3 sm:-left-4 bg-yellow-500 text-white w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center text-xl sm:text-2xl font-bold shadow-lg animate-pulse">
+                  <div className="absolute -top-2 sm:-top-3 -left-2 sm:-left-3 bg-yellow-500 text-white w-10 h-10 sm:w-12 sm:h-12 md:w-16 md:h-16 rounded-full flex items-center justify-center text-lg sm:text-xl md:text-2xl font-bold shadow-lg animate-pulse">
                     01
                   </div>
                 </div>
               </div>
-              <div className="w-full lg:w-1/2 space-y-4 sm:space-y-6" data-aos="fade-left" data-aos-delay="200">
-                <div className="flex items-center gap-3 sm:gap-4">
-                  <div className="bg-yellow-100 p-2.5 sm:p-4 rounded-full transform hover:scale-110 transition-transform duration-300 flex-shrink-0">
-                    <Users className="h-6 w-6 sm:h-8 sm:w-8 text-yellow-600" />
+              <div className="w-full lg:w-1/2 space-y-2 sm:space-y-3 md:space-y-4" data-aos="fade-left" data-aos-delay="200">
+                <div className="flex items-center gap-2 sm:gap-3">
+                  <div className="bg-yellow-100 p-2 sm:p-3 md:p-4 rounded-full transform hover:scale-110 transition-transform duration-300 flex-shrink-0">
+                    <Users className="h-4 w-4 sm:h-5 sm:w-5 md:h-8 md:w-8 text-yellow-600" />
                   </div>
-                  <h3 className="text-xl sm:text-2xl font-bold text-gray-900">Sign Up</h3>
+                  <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900">Sign Up</h3>
                 </div>
-                <p className="text-base sm:text-lg text-gray-600 leading-relaxed">
+                <p className="text-sm sm:text-base text-gray-600 leading-relaxed">
                   Create your account as a driver or passenger in just a few minutes. Choose your role, verify your identity, and get ready to start sharing rides with our community.
                 </p>
-                <ul className="space-y-2 text-sm sm:text-base text-gray-600">
+                <ul className="space-y-1.5 sm:space-y-2 text-xs sm:text-sm text-gray-600">
                   <li className="flex items-center gap-2">
                     <div className="w-2 h-2 bg-yellow-500 rounded-full flex-shrink-0"></div>
                     Quick registration process
@@ -285,34 +286,35 @@ const LandingPage = () => {
 
             {/* Connecting Line */}
             <div className="flex justify-center" data-aos="fade-up" data-aos-delay="100">
-              <div className="w-1 h-12 sm:h-16 bg-gradient-to-b from-yellow-200 to-yellow-400 rounded-full animate-pulse"></div>
+              <div className="w-1 h-8 sm:h-10 md:h-12 lg:h-16 bg-gradient-to-b from-yellow-200 to-yellow-400 rounded-full animate-pulse"></div>
             </div>
 
             {/* Step 2 - Find or Post */}
-            <div className="flex flex-col lg:flex-row-reverse items-center gap-6 sm:gap-8 md:gap-12">
+            <div className="flex flex-col lg:flex-row-reverse items-center gap-4 sm:gap-6 md:gap-8">
               <div className="w-full lg:w-1/2" data-aos="fade-left" data-aos-delay="100">
                 <div className="relative">
                   <img
                     src="find.jpg"
                     alt="Person searching for rides on map"
-                    className="w-full h-56 sm:h-72 md:h-80 object-cover rounded-2xl shadow-lg transform hover:scale-105 transition-transform duration-300"
+                    className="w-full h-44 sm:h-56 md:h-72 lg:h-80 object-cover rounded-2xl shadow-lg transform hover:scale-105 transition-transform duration-300"
+                    loading="lazy"
                   />
-                  <div className="absolute -top-3 sm:-top-4 -right-3 sm:-right-4 bg-yellow-500 text-white w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center text-xl sm:text-2xl font-bold shadow-lg animate-pulse">
+                  <div className="absolute -top-2 sm:-top-3 -right-2 sm:-right-3 bg-yellow-500 text-white w-10 h-10 sm:w-12 sm:h-12 md:w-16 md:h-16 rounded-full flex items-center justify-center text-lg sm:text-xl md:text-2xl font-bold shadow-lg animate-pulse">
                     02
                   </div>
                 </div>
               </div>
-              <div className="w-full lg:w-1/2 space-y-4 sm:space-y-6" data-aos="fade-right" data-aos-delay="200">
-                <div className="flex items-center gap-3 sm:gap-4">
-                  <div className="bg-yellow-100 p-2.5 sm:p-4 rounded-full transform hover:scale-110 transition-transform duration-300 flex-shrink-0">
-                    <MapPin className="h-6 w-6 sm:h-8 sm:w-8 text-yellow-600" />
+              <div className="w-full lg:w-1/2 space-y-2 sm:space-y-3 md:space-y-4" data-aos="fade-right" data-aos-delay="200">
+                <div className="flex items-center gap-2 sm:gap-3">
+                  <div className="bg-yellow-100 p-2 sm:p-3 md:p-4 rounded-full transform hover:scale-110 transition-transform duration-300 flex-shrink-0">
+                    <MapPin className="h-4 w-4 sm:h-5 sm:w-5 md:h-8 md:w-8 text-yellow-600" />
                   </div>
-                  <h3 className="text-xl sm:text-2xl font-bold text-gray-900">Find or Post</h3>
+                  <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900">Find or Post</h3>
                 </div>
-                <p className="text-base sm:text-lg text-gray-600 leading-relaxed">
+                <p className="text-sm sm:text-base text-gray-600 leading-relaxed">
                   Search for available rides or post your own trip with available seats. Use our interactive map to find the perfect match for your journey.
                 </p>
-                <ul className="space-y-2 text-sm sm:text-base text-gray-600">
+                <ul className="space-y-1.5 sm:space-y-2 text-xs sm:text-sm text-gray-600">
                   <li className="flex items-center gap-2">
                     <div className="w-2 h-2 bg-yellow-500 rounded-full flex-shrink-0"></div>
                     Real-time ride availability
@@ -331,34 +333,35 @@ const LandingPage = () => {
 
             {/* Connecting Line */}
             <div className="flex justify-center" data-aos="fade-up" data-aos-delay="100">
-              <div className="w-1 h-12 sm:h-16 bg-gradient-to-b from-yellow-200 to-yellow-400 rounded-full animate-pulse"></div>
+              <div className="w-1 h-8 sm:h-10 md:h-12 lg:h-16 bg-gradient-to-b from-yellow-200 to-yellow-400 rounded-full animate-pulse"></div>
             </div>
 
             {/* Step 3 - Connect */}
-            <div className="flex flex-col lg:flex-row items-center gap-6 sm:gap-8 md:gap-12">
+            <div className="flex flex-col lg:flex-row items-center gap-4 sm:gap-6 md:gap-8">
               <div className="w-full lg:w-1/2" data-aos="fade-right" data-aos-delay="100">
                 <div className="relative">
                   <img
                     src="connect.jpg"
                     alt="People connecting and confirming ride booking"
-                    className="w-full h-56 sm:h-72 md:h-80 object-cover rounded-2xl shadow-lg transform hover:scale-105 transition-transform duration-300"
+                    className="w-full h-44 sm:h-56 md:h-72 lg:h-80 object-cover rounded-2xl shadow-lg transform hover:scale-105 transition-transform duration-300"
+                    loading="lazy"
                   />
-                  <div className="absolute -top-3 sm:-top-4 -left-3 sm:-left-4 bg-yellow-500 text-white w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center text-xl sm:text-2xl font-bold shadow-lg animate-pulse">
+                  <div className="absolute -top-2 sm:-top-3 -left-2 sm:-left-3 bg-yellow-500 text-white w-10 h-10 sm:w-12 sm:h-12 md:w-16 md:h-16 rounded-full flex items-center justify-center text-lg sm:text-xl md:text-2xl font-bold shadow-lg animate-pulse">
                     03
                   </div>
                 </div>
               </div>
-              <div className="w-full lg:w-1/2 space-y-4 sm:space-y-6" data-aos="fade-left" data-aos-delay="200">
-                <div className="flex items-center gap-3 sm:gap-4">
-                  <div className="bg-yellow-100 p-2.5 sm:p-4 rounded-full transform hover:scale-110 transition-transform duration-300 flex-shrink-0">
-                    <Shield className="h-6 w-6 sm:h-8 sm:w-8 text-yellow-600" />
+              <div className="w-full lg:w-1/2 space-y-2 sm:space-y-3 md:space-y-4" data-aos="fade-left" data-aos-delay="200">
+                <div className="flex items-center gap-2 sm:gap-3">
+                  <div className="bg-yellow-100 p-2 sm:p-3 md:p-4 rounded-full transform hover:scale-110 transition-transform duration-300 flex-shrink-0">
+                    <Shield className="h-4 w-4 sm:h-5 sm:w-5 md:h-8 md:w-8 text-yellow-600" />
                   </div>
-                  <h3 className="text-xl sm:text-2xl font-bold text-gray-900">Connect</h3>
+                  <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900">Connect</h3>
                 </div>
-                <p className="text-base sm:text-lg text-gray-600 leading-relaxed">
+                <p className="text-sm sm:text-base text-gray-600 leading-relaxed">
                   Get matched with compatible travelers and confirm your booking. Our system ensures safe connections with verified users and transparent communication.
                 </p>
-                <ul className="space-y-2 text-sm sm:text-base text-gray-600">
+                <ul className="space-y-1.5 sm:space-y-2 text-xs sm:text-sm text-gray-600">
                   <li className="flex items-center gap-2">
                     <div className="w-2 h-2 bg-yellow-500 rounded-full flex-shrink-0"></div>
                     Verified user profiles
@@ -377,34 +380,35 @@ const LandingPage = () => {
 
             {/* Connecting Line */}
             <div className="flex justify-center" data-aos="fade-up" data-aos-delay="100">
-              <div className="w-1 h-12 sm:h-16 bg-gradient-to-b from-yellow-200 to-yellow-400 rounded-full animate-pulse"></div>
+              <div className="w-1 h-8 sm:h-10 md:h-12 lg:h-16 bg-gradient-to-b from-yellow-200 to-yellow-400 rounded-full animate-pulse"></div>
             </div>
 
             {/* Step 4 - Travel */}
-            <div className="flex flex-col lg:flex-row-reverse items-center gap-6 sm:gap-8 md:gap-12">
+            <div className="flex flex-col lg:flex-row-reverse items-center gap-4 sm:gap-6 md:gap-8">
               <div className="w-full lg:w-1/2" data-aos="fade-left" data-aos-delay="100">
                 <div className="relative">
                   <img
                     src="travel.jpg"
                     alt="Happy travelers in car sharing a ride"
-                    className="w-full h-56 sm:h-72 md:h-80 object-cover rounded-2xl shadow-lg transform hover:scale-105 transition-transform duration-300"
+                    className="w-full h-44 sm:h-56 md:h-72 lg:h-80 object-cover rounded-2xl shadow-lg transform hover:scale-105 transition-transform duration-300"
+                    loading="lazy"
                   />
-                  <div className="absolute -top-3 sm:-top-4 -right-3 sm:-right-4 bg-yellow-500 text-white w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center text-xl sm:text-2xl font-bold shadow-lg animate-pulse">
+                  <div className="absolute -top-2 sm:-top-3 -right-2 sm:-right-3 bg-yellow-500 text-white w-10 h-10 sm:w-12 sm:h-12 md:w-16 md:h-16 rounded-full flex items-center justify-center text-lg sm:text-xl md:text-2xl font-bold shadow-lg animate-pulse">
                     04
                   </div>
                 </div>
               </div>
-              <div className="w-full lg:w-1/2 space-y-4 sm:space-y-6" data-aos="fade-right" data-aos-delay="200">
-                <div className="flex items-center gap-3 sm:gap-4">
-                  <div className="bg-yellow-100 p-2.5 sm:p-4 rounded-full transform hover:scale-110 transition-transform duration-300 flex-shrink-0">
-                    <Briefcase className="h-6 w-6 sm:h-8 sm:w-8 text-yellow-600" />
+              <div className="w-full lg:w-1/2 space-y-2 sm:space-y-3 md:space-y-4" data-aos="fade-right" data-aos-delay="200">
+                <div className="flex items-center gap-2 sm:gap-3">
+                  <div className="bg-yellow-100 p-2 sm:p-3 md:p-4 rounded-full transform hover:scale-110 transition-transform duration-300 flex-shrink-0">
+                    <Briefcase className="h-4 w-4 sm:h-5 sm:w-5 md:h-8 md:w-8 text-yellow-600" />
                   </div>
-                  <h3 className="text-xl sm:text-2xl font-bold text-gray-900">Travel</h3>
+                  <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900">Travel</h3>
                 </div>
-                <p className="text-base sm:text-lg text-gray-600 leading-relaxed">
+                <p className="text-sm sm:text-base text-gray-600 leading-relaxed">
                   Enjoy your shared journey with real-time tracking and secure payments. Travel comfortably knowing you're saving money and helping the environment.
                 </p>
-                <ul className="space-y-2 text-sm sm:text-base text-gray-600">
+                <ul className="space-y-1.5 sm:space-y-2 text-xs sm:text-sm text-gray-600">
                   <li className="flex items-center gap-2">
                     <div className="w-2 h-2 bg-yellow-500 rounded-full flex-shrink-0"></div>
                     Real-time GPS tracking
@@ -426,27 +430,27 @@ const LandingPage = () => {
       </section>
 
       {/* CTA Section */}
-      <section className="py-8 sm:py-12 md:py-16 lg:py-20 bg-yellow-500 w-full">
+      <section className="py-6 sm:py-8 md:py-12 lg:py-20 bg-yellow-500 w-full">
         <div className="w-full px-0">
           <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 text-center">
-            <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-white mb-2 sm:mb-3 md:mb-4" data-aos="fade-up" data-aos-delay="100">
+            <h2 className="text-lg sm:text-2xl md:text-3xl lg:text-4xl font-bold text-white mb-2 sm:mb-2 md:mb-3" data-aos="fade-up" data-aos-delay="100">
               Ready to Start Your Journey?
             </h2>
-            <p className="text-xs sm:text-sm md:text-base lg:text-lg text-yellow-100 mb-4 sm:mb-6 md:mb-8 max-w-2xl mx-auto px-1" data-aos="fade-up" data-aos-delay="200">
+            <p className="text-xs sm:text-sm md:text-base lg:text-lg text-yellow-100 mb-3 sm:mb-4 md:mb-6 max-w-2xl mx-auto px-1" data-aos="fade-up" data-aos-delay="200">
               Join thousands of travelers who are already saving money and reducing their carbon footprint.
             </p>
             <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 md:gap-4 justify-center" data-aos="fade-up" data-aos-delay="300">
               <button
                 onClick={() => handleSignUpClick('passenger')}
                 disabled={isLoading}
-                className="bg-white text-yellow-600 hover:bg-gray-50 px-4 sm:px-6 md:px-8 py-2.5 sm:py-3 md:py-4 rounded-lg font-semibold text-sm sm:text-base md:text-lg transition-all duration-200 hover:shadow-lg transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto"
+                className="bg-white text-yellow-600 hover:bg-gray-50 active:scale-95 px-4 sm:px-6 md:px-8 py-2.5 sm:py-3 md:py-4 rounded-lg font-semibold text-sm sm:text-base md:text-lg transition-all duration-200 hover:shadow-lg transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed w-full min-h-11 sm:min-h-12 md:min-h-auto sm:w-auto flex items-center justify-center"
               >
                 Sign Up as Passenger
               </button>
               <button
                 onClick={() => handleSignUpClick('driver')}
                 disabled={isLoading}
-                className="border-2 border-white text-white hover:bg-white hover:text-yellow-600 px-4 sm:px-6 md:px-8 py-2.5 sm:py-3 md:py-4 rounded-lg font-semibold text-sm sm:text-base md:text-lg transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto"
+                className="border-2 border-white text-white hover:bg-white hover:text-yellow-600 active:scale-95 px-4 sm:px-6 md:px-8 py-2.5 sm:py-3 md:py-4 rounded-lg font-semibold text-sm sm:text-base md:text-lg transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed w-full min-h-11 sm:min-h-12 md:min-h-auto sm:w-auto flex items-center justify-center"
               >
                 Sign Up as Driver
               </button>
@@ -457,20 +461,20 @@ const LandingPage = () => {
 
       {/* Loading Overlay with Quotes */}
       {isLoading && (
-        <div className="fixed inset-0 bg-white bg-opacity-95 flex flex-col items-center justify-center z-50 px-4">
+        <div className="fixed inset-0 bg-white bg-opacity-95 flex flex-col items-center justify-center z-50 px-4 safe-area-inset">
           <Loader 
-            size={180}
+            size={window.innerWidth < 640 ? 120 : 180}
             showText={false}
-            className="mb-6 sm:mb-8"
+            className="mb-4 sm:mb-6 md:mb-8"
           />
-          <div className="text-center max-w-lg mx-auto">
-            <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4">
+          <div className="text-center max-w-lg mx-auto px-2">
+            <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 mb-2 sm:mb-3 md:mb-4">
               Getting Ready for Your Journey...
             </h3>
-            <p className="text-base sm:text-lg text-yellow-600 font-medium mb-2 animate-pulse">
+            <p className="text-sm sm:text-base text-yellow-600 font-medium mb-2 animate-pulse line-clamp-2">
               {quotes[currentQuote]}
             </p>
-            <div className="flex justify-center space-x-2 mt-6">
+            <div className="flex justify-center space-x-1.5 sm:space-x-2 mt-4 sm:mt-6">
               {quotes.map((_, index) => (
                 <div
                   key={index}
