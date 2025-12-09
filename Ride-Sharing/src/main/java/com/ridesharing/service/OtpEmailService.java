@@ -23,15 +23,17 @@ public class OtpEmailService {
     
     private final OtpVerificationRepository otpRepository;
     private final JavaMailSender mailSender;
+    private final SendGridEmailService sendGridEmailService;
     
     private static final int OTP_EXPIRY_MINUTES = 5;
     private static final int OTP_LENGTH = 6;
     private static final int MAX_ATTEMPTS_PER_HOUR = 5;
     private static final String FROM_EMAIL = "debmalyapan4@gmail.com";
 
-    public OtpEmailService(OtpVerificationRepository otpRepository, JavaMailSender mailSender) {
+    public OtpEmailService(OtpVerificationRepository otpRepository, JavaMailSender mailSender, SendGridEmailService sendGridEmailService) {
         this.otpRepository = otpRepository;
         this.mailSender = mailSender;
+        this.sendGridEmailService = sendGridEmailService;
     }
 
     /**
@@ -103,11 +105,25 @@ public class OtpEmailService {
     }
 
     /**
-     * Send OTP via Email using SMTP
+     * Send OTP via Email using SendGrid (preferred) or SMTP (fallback)
      */
     private void sendOtpViaEmail(String phoneNumber, String otp, String email) {
+        // Try SendGrid first (works on Render and other cloud platforms)
+        if (sendGridEmailService.isSendGridConfigured()) {
+            try {
+                logger.info("📧 Attempting to send OTP via SendGrid to: {}", email);
+                sendGridEmailService.sendOtpEmail(email, phoneNumber, otp);
+                logger.info("✅ OTP email sent successfully via SendGrid to: {}", email);
+                return; // Success, exit
+            } catch (Exception sendGridError) {
+                logger.warn("⚠️ SendGrid failed: {}. Falling back to SMTP...", sendGridError.getMessage());
+                // Fall through to SMTP fallback
+            }
+        }
+
+        // Fallback: Try SMTP email
         try {
-            logger.info("📧 Sending OTP via Email to: {}", email);
+            logger.info("📧 Attempting to send OTP via SMTP to: {}", email);
 
             // Create HTML email template
             String htmlContent = String.format(

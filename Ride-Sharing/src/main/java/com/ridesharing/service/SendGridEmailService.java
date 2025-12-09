@@ -79,6 +79,14 @@ public class SendGridEmailService {
                 """, otp, phoneNumber);
 
             // Create JSON payload for SendGrid API
+            // Properly escape the HTML content for JSON
+            String escapedHtml = htmlContent
+                .replace("\\", "\\\\")  // Escape backslashes first
+                .replace("\"", "\\\"")  // Escape quotes
+                .replace("\n", "\\n")   // Escape newlines
+                .replace("\r", "\\r")   // Escape carriage returns
+                .replace("\t", "\\t");  // Escape tabs
+            
             String jsonPayload = String.format(
                 """
                 {
@@ -101,7 +109,7 @@ public class SendGridEmailService {
                 fromEmail,
                 fromName,
                 otp,
-                htmlContent.replace("\"", "\\\"").replace("\n", "\\n")
+                escapedHtml
             );
 
             // Make HTTP POST request to SendGrid
@@ -125,8 +133,14 @@ public class SendGridEmailService {
             if (statusCode >= 200 && statusCode < 300) {
                 logger.info("✅ OTP email sent successfully via SendGrid HTTP API to: {}", toEmail);
             } else {
-                String errorResponse = new String(conn.getErrorStream().readAllBytes());
-                logger.error("❌ SendGrid API error. Status: {}, Body: {}", statusCode, errorResponse);
+                try {
+                    String errorResponse = conn.getErrorStream() != null ? 
+                        new String(conn.getErrorStream().readAllBytes()) : 
+                        "No error details";
+                    logger.error("❌ SendGrid API error. Status: {}, Body: {}", statusCode, errorResponse);
+                } catch (Exception e) {
+                    logger.error("❌ SendGrid API error. Status: {}", statusCode);
+                }
                 throw new RuntimeException("SendGrid API returned status: " + statusCode);
             }
 
