@@ -14,11 +14,13 @@ const Header = ({ user, userType, onLogout }) => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center py-4">
           {/* Logo */}
-          <Link to="/" className="flex items-center space-x-2">
-            <div className="bg-yellow-500 p-2 rounded-lg">
-              <Car className="h-6 w-6 text-white" />
+          <Link to="/" className="flex items-center space-x-3 hover:opacity-80 transition-opacity">
+            <div className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 flex-shrink-0">
+              <img src="/logo.png" alt="SmartRide Logo" className="w-full h-full object-contain" />
             </div>
-            <span className="text-2xl font-bold text-gray-900">SmartRide</span>
+            <span className="text-xl sm:text-2xl md:text-3xl font-bold hidden sm:inline">
+              <span className="text-gray-900">Smart</span><span className="text-yellow-500">Ride</span>
+            </span>
           </Link>
 
           {/* Desktop Navigation */}

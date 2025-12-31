@@ -1,0 +1,54 @@
+<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <!-- Outer yellow circle -->
+  <circle cx="100" cy="100" r="95" fill="none" stroke="#FCD34D" stroke-width="12"/>
+  
+  <!-- Outer dark blue circle -->
+  <circle cx="100" cy="100" r="85" fill="none" stroke="#1E3A8A" stroke-width="8"/>
+  
+  <!-- Arrow 1 (top) -->
+  <path d="M 100 20 L 115 50 M 100 20 L 85 50" fill="none" stroke="#FCD34D" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  
+  <!-- Arrow 2 (right) -->
+  <path d="M 180 100 L 150 115 M 180 100 L 150 85" fill="none" stroke="#1E3A8A" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  
+  <!-- Arrow 3 (bottom) -->
+  <path d="M 100 180 L 85 150 M 100 180 L 115 150" fill="none" stroke="#FCD34D" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  
+  <!-- Arrow 4 (left) -->
+  <path d="M 20 100 L 50 85 M 20 100 L 50 115" fill="none" stroke="#1E3A8A" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  
+  <!-- Dark car (left) -->
+  <g transform="translate(55, 90)">
+    <!-- Car body -->
+    <rect x="0" y="8" width="20" height="12" fill="#1E3A8A" rx="2"/>
+    <!-- Car roof -->
+    <rect x="4" y="3" width="12" height="6" fill="#1E3A8A" rx="1"/>
+    <!-- Car window -->
+    <rect x="5" y="4" width="4" height="4" fill="#E5E7EB"/>
+    <!-- Wheel 1 -->
+    <circle cx="4" cy="21" r="2.5" fill="#1E3A8A"/>
+    <!-- Wheel 2 -->
+    <circle cx="16" cy="21" r="2.5" fill="#1E3A8A"/>
+  </g>
+  
+  <!-- Yellow car (right) -->
+  <g transform="translate(125, 90)">
+    <!-- Car body -->
+    <rect x="0" y="8" width="20" height="12" fill="#FCD34D" rx="2"/>
+    <!-- Car roof -->
+    <rect x="4" y="3" width="12" height="6" fill="#FCD34D" rx="1"/>
+    <!-- Car window -->
+    <rect x="5" y="4" width="4" height="4" fill="#E5E7EB"/>
+    <!-- Wheel 1 -->
+    <circle cx="4" cy="21" r="2.5" fill="#1E3A8A"/>
+    <!-- Wheel 2 -->
+    <circle cx="16" cy="21" r="2.5" fill="#1E3A8A"/>
+  </g>
+  
+  <!-- Wrench/service icon in center -->
+  <g transform="translate(88, 88)">
+    <path d="M 12 2 L 20 10 M 12 2 C 12 2 8 6 2 12 C 1 13 1 15 2 16 L 8 22 C 9 23 11 23 12 22 C 18 16 22 12 22 12" 
+          fill="none" stroke="#1E3A8A" stroke-width="2" stroke-linecap="round"/>
+    <circle cx="6" cy="16" r="1.5" fill="#1E3A8A"/>
+  </g>
+</svg>
