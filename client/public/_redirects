@@ -1,0 +1,8 @@
+# Redirects for Single Page Application
+# This handles client-side routing for React Router
+
+# API routes go to backend
+/api/* https://your-backend-url.onrender.com/api/:splat 200
+
+# All other routes serve index.html for React Router to handle
+/*    /index.html   200

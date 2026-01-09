@@ -4,25 +4,8 @@ import { useEffect, useState } from 'react'
 import AOS from 'aos'
 import 'aos/dist/aos.css'
 import { DotLottieReact } from '@lottiefiles/dotlottie-react'
-import Loader from './Loader'
 
 const LandingPage = () => {
-  const [isLoading, setIsLoading] = useState(false)
-  const [isPageLoading, setIsPageLoading] = useState(true)
-  const [currentQuote, setCurrentQuote] = useState(0)
-  
-  // Ride-sharing related quotes
-  const quotes = [
-    "Share the journey, share the joy! 🚗✨",
-    "Together we travel farther and smarter! 🌟",
-    "Your next adventure is just a ride away! 🛣️",
-    "Making every mile more affordable! 💰",
-    "Connect, travel, and save the planet! 🌍",
-    "Where every trip becomes a friendship! 👥",
-    "Smart rides for smart people! 🧠",
-    "Reducing carbon footprint, one ride at a time! 🌱"
-  ]
-
   useEffect(() => {
     AOS.init({
       duration: 1000,
@@ -32,69 +15,13 @@ const LandingPage = () => {
     })
   }, [])
 
-  // Initial page loading effect
-  useEffect(() => {
-    const initializePage = async () => {
-      // Simulate page loading time
-      await new Promise(resolve => setTimeout(resolve, 2500))
-      setIsPageLoading(false)
-    }
-    
-    initializePage()
-  }, [])
-
-  // Handle quote rotation during any loading
-  useEffect(() => {
-    let interval = null
-    if (isLoading || isPageLoading) {
-      interval = setInterval(() => {
-        setCurrentQuote(prev => (prev + 1) % quotes.length)
-      }, 2000) // Change quote every 2 seconds
-    }
-    return () => {
-      if (interval) clearInterval(interval)
-    }
-  }, [isLoading, isPageLoading, quotes.length])
-
   const handleSignUpClick = (type) => {
-    setIsLoading(true)
-    // Simulate navigation delay
-    setTimeout(() => {
-      window.location.href = `/register?type=${type}`
-    }, 3000)
+    window.location.href = `/register?type=${type}`
   }
 
   return (
     <div className="min-h-screen overflow-x-hidden">
-      {/* Initial Page Loading */}
-      {isPageLoading && (
-        <div className="fixed inset-0 bg-gradient-to-br from-yellow-50 to-orange-50 flex flex-col items-center justify-center z-50 px-4 safe-area-inset">
-          <Loader 
-            size={window.innerWidth < 640 ? 120 : 200}
-            showText={false}
-            className="mb-4 sm:mb-6 md:mb-8"
-          />
-          <div className="text-center max-w-lg mx-auto px-2">
-            <h1 className="text-xl sm:text-2xl md:text-4xl font-bold text-gray-900 mb-2 sm:mb-3 md:mb-4 leading-tight">
-              Welcome to <span className="text-yellow-500">SmartRide</span>
-            </h1>
-            <p className="text-sm sm:text-base md:text-xl text-yellow-600 font-medium mb-2 animate-pulse line-clamp-2">
-              {quotes[currentQuote]}
-            </p>
-            <div className="flex justify-center space-x-1.5 sm:space-x-2 mt-4 sm:mt-6">
-              {quotes.map((_, index) => (
-                <div
-                  key={index}
-                  className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                    index === currentQuote ? 'bg-yellow-500 scale-125' : 'bg-gray-300'
-                  }`}
-                />
-              ))}
-            </div>
-            <p className="text-xs sm:text-xs text-gray-500 mt-3 sm:mt-4">Loading your journey...</p>
-          </div>
-        </div>
-      )}
+
 
       {/* Hero Section */}
       <section className="bg-gradient-to-br from-yellow-50 to-orange-50 py-6 sm:py-8 md:py-12 lg:py-20 w-full">
@@ -113,15 +40,13 @@ const LandingPage = () => {
                 <div className="flex flex-col gap-2 sm:gap-3 md:gap-4 pt-1 sm:pt-2 md:pt-4" data-aos="fade-up" data-aos-delay="400">
                   <button
                     onClick={() => handleSignUpClick('passenger')}
-                    disabled={isLoading}
-                    className="bg-yellow-500 hover:bg-yellow-600 active:scale-95 text-white px-4 sm:px-6 md:px-8 py-2.5 sm:py-3 md:py-4 rounded-lg font-semibold text-sm sm:text-base md:text-lg transition-all duration-200 hover:shadow-lg text-center transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed w-full min-h-11 sm:min-h-12 md:min-h-auto sm:w-auto flex items-center justify-center"
+                    className="bg-yellow-500 hover:bg-yellow-600 active:scale-95 text-white px-4 sm:px-6 md:px-8 py-2.5 sm:py-3 md:py-4 rounded-lg font-semibold text-sm sm:text-base md:text-lg transition-all duration-200 hover:shadow-lg text-center transform hover:scale-105 w-full min-h-11 sm:min-h-12 md:min-h-auto sm:w-auto flex items-center justify-center"
                   >
                     Find a Ride
                   </button>
                   <button
                     onClick={() => handleSignUpClick('driver')}
-                    disabled={isLoading}
-                    className="border-2 border-yellow-500 text-yellow-600 hover:bg-yellow-500 hover:text-white active:scale-95 px-4 sm:px-6 md:px-8 py-2.5 sm:py-3 md:py-4 rounded-lg font-semibold text-sm sm:text-base md:text-lg transition-all duration-200 text-center transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed w-full min-h-11 sm:min-h-12 md:min-h-auto sm:w-auto flex items-center justify-center"
+                    className="border-2 border-yellow-500 text-yellow-600 hover:bg-yellow-500 hover:text-white active:scale-95 px-4 sm:px-6 md:px-8 py-2.5 sm:py-3 md:py-4 rounded-lg font-semibold text-sm sm:text-base md:text-lg transition-all duration-200 text-center transform hover:scale-105 w-full min-h-11 sm:min-h-12 md:min-h-auto sm:w-auto flex items-center justify-center"
                   >
                     Offer a Ride
                   </button>
@@ -442,15 +367,13 @@ const LandingPage = () => {
             <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 md:gap-4 justify-center" data-aos="fade-up" data-aos-delay="300">
               <button
                 onClick={() => handleSignUpClick('passenger')}
-                disabled={isLoading}
-                className="bg-white text-yellow-600 hover:bg-gray-50 active:scale-95 px-4 sm:px-6 md:px-8 py-2.5 sm:py-3 md:py-4 rounded-lg font-semibold text-sm sm:text-base md:text-lg transition-all duration-200 hover:shadow-lg transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed w-full min-h-11 sm:min-h-12 md:min-h-auto sm:w-auto flex items-center justify-center"
+                className="bg-white text-yellow-600 hover:bg-gray-50 active:scale-95 px-4 sm:px-6 md:px-8 py-2.5 sm:py-3 md:py-4 rounded-lg font-semibold text-sm sm:text-base md:text-lg transition-all duration-200 hover:shadow-lg transform hover:scale-105 w-full min-h-11 sm:min-h-12 md:min-h-auto sm:w-auto flex items-center justify-center"
               >
                 Sign Up as Passenger
               </button>
               <button
                 onClick={() => handleSignUpClick('driver')}
-                disabled={isLoading}
-                className="border-2 border-white text-white hover:bg-white hover:text-yellow-600 active:scale-95 px-4 sm:px-6 md:px-8 py-2.5 sm:py-3 md:py-4 rounded-lg font-semibold text-sm sm:text-base md:text-lg transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed w-full min-h-11 sm:min-h-12 md:min-h-auto sm:w-auto flex items-center justify-center"
+                className="border-2 border-white text-white hover:bg-white hover:text-yellow-600 active:scale-95 px-4 sm:px-6 md:px-8 py-2.5 sm:py-3 md:py-4 rounded-lg font-semibold text-sm sm:text-base md:text-lg transition-all duration-200 transform hover:scale-105 w-full min-h-11 sm:min-h-12 md:min-h-auto sm:w-auto flex items-center justify-center"
               >
                 Sign Up as Driver
               </button>
@@ -459,34 +382,7 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* Loading Overlay with Quotes */}
-      {isLoading && (
-        <div className="fixed inset-0 bg-white bg-opacity-95 flex flex-col items-center justify-center z-50 px-4 safe-area-inset">
-          <Loader 
-            size={window.innerWidth < 640 ? 120 : 180}
-            showText={false}
-            className="mb-4 sm:mb-6 md:mb-8"
-          />
-          <div className="text-center max-w-lg mx-auto px-2">
-            <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 mb-2 sm:mb-3 md:mb-4">
-              Getting Ready for Your Journey...
-            </h3>
-            <p className="text-sm sm:text-base text-yellow-600 font-medium mb-2 animate-pulse line-clamp-2">
-              {quotes[currentQuote]}
-            </p>
-            <div className="flex justify-center space-x-1.5 sm:space-x-2 mt-4 sm:mt-6">
-              {quotes.map((_, index) => (
-                <div
-                  key={index}
-                  className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                    index === currentQuote ? 'bg-yellow-500 scale-125' : 'bg-gray-300'
-                  }`}
-                />
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
+
     </div>
   )
 }

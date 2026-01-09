@@ -40,6 +40,7 @@ public class SecurityConfig {
                 // Health check and root endpoints (for Render/Docker health checks)
                 .requestMatchers("/").permitAll()
                 .requestMatchers("/health").permitAll()
+                .requestMatchers("/api/health/**").permitAll()
                 .requestMatchers("/actuator/**").permitAll()
                 .requestMatchers("/error").permitAll()
                 // API endpoints
