@@ -74,9 +74,52 @@ const LandingPage = () => {
         <div className="w-full px-0">
           <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
             <div className="text-center mb-4 sm:mb-6 md:mb-10 lg:mb-16" data-aos="fade-up">
-              <h2 className="text-lg sm:text-2xl md:text-3xl lg:text-4xl font-bold text-gray-900 mb-2 sm:mb-2 md:mb-3" data-aos="fade-up" data-aos-delay="100">
-                Why Choose SmartRide?
-              </h2>
+              <div className="relative inline-block mb-2 sm:mb-2 md:mb-3" data-aos="fade-up" data-aos-delay="100">
+                <h2 className="text-lg sm:text-2xl md:text-3xl lg:text-4xl font-bold text-gray-900 relative z-10 px-4 sm:px-6 md:px-8">
+                  Why Choose SmartRide?
+                </h2>
+                {/* Hand-drawn circle decoration */}
+                <svg
+                  className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[110%] h-[180%] sm:h-[200%] md:h-[220%] pointer-events-none"
+                  viewBox="0 0 400 120"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                  preserveAspectRatio="none"
+                >
+                  <ellipse
+                    cx="200"
+                    cy="60"
+                    rx="190"
+                    ry="50"
+                    stroke="#EAB308"
+                    strokeWidth="3"
+                    strokeLinecap="round"
+                    fill="none"
+                    className="animate-draw-circle"
+                    style={{
+                      strokeDasharray: '1200',
+                      strokeDashoffset: '0',
+                      transform: 'rotate(-3deg)',
+                      transformOrigin: 'center'
+                    }}
+                  />
+                  <ellipse
+                    cx="200"
+                    cy="60"
+                    rx="185"
+                    ry="45"
+                    stroke="#F59E0B"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    fill="none"
+                    opacity="0.6"
+                    style={{
+                      transform: 'rotate(2deg)',
+                      transformOrigin: 'center'
+                    }}
+                  />
+                </svg>
+              </div>
               <p className="text-xs sm:text-sm md:text-base lg:text-lg text-gray-600 max-w-3xl mx-auto px-1" data-aos="fade-up" data-aos-delay="200">
                 Experience the future of ride-sharing with our comprehensive platform designed for safety, convenience, and affordability.
               </p>
@@ -158,9 +201,51 @@ const LandingPage = () => {
         <div className="w-full px-0">
           <div className="max-w-5xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
             <div className="text-center mb-4 sm:mb-6 md:mb-10 lg:mb-16" data-aos="fade-up">
-              <h2 className="text-lg sm:text-2xl md:text-3xl lg:text-4xl font-bold text-gray-900 mb-2 sm:mb-2 md:mb-3" data-aos="fade-up" data-aos-delay="100">
-                How SmartRide Works
-              </h2>
+              <div className="relative inline-block mb-2 sm:mb-2 md:mb-3" data-aos="fade-up" data-aos-delay="100">
+                <h2 className="text-lg sm:text-2xl md:text-3xl lg:text-4xl font-bold text-gray-900 relative z-10 px-4 sm:px-6 md:px-8">
+                  How SmartRide Works
+                </h2>
+                {/* Hand-drawn circle decoration */}
+                <svg
+                  className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[110%] h-[180%] sm:h-[200%] md:h-[220%] pointer-events-none"
+                  viewBox="0 0 400 120"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                  preserveAspectRatio="none"
+                >
+                  <ellipse
+                    cx="200"
+                    cy="60"
+                    rx="190"
+                    ry="50"
+                    stroke="#EAB308"
+                    strokeWidth="3"
+                    strokeLinecap="round"
+                    fill="none"
+                    style={{
+                      strokeDasharray: '1200',
+                      strokeDashoffset: '0',
+                      transform: 'rotate(-3deg)',
+                      transformOrigin: 'center'
+                    }}
+                  />
+                  <ellipse
+                    cx="200"
+                    cy="60"
+                    rx="185"
+                    ry="45"
+                    stroke="#F59E0B"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    fill="none"
+                    opacity="0.6"
+                    style={{
+                      transform: 'rotate(2deg)',
+                      transformOrigin: 'center'
+                    }}
+                  />
+                </svg>
+              </div>
               <p className="text-xs sm:text-sm md:text-base lg:text-lg text-gray-600 max-w-3xl mx-auto px-1" data-aos="fade-up" data-aos-delay="200">
                 Getting started with SmartRide is simple. Follow these easy steps to begin your ride-sharing journey.
               </p>
