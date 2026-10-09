@@ -21,8 +21,8 @@ client/node_modules/
 .env.*.local
 
 # Configuration files with sensitive data
-# application.properties is committed with placeholders only
-# Ignore only local and environment-specific variants
+# Keep real Spring configuration files local; commit the .example template instead
+**/application.properties
 **/application-local.properties
 **/application-prod.properties
 **/application-*.local.properties
