@@ -30,8 +30,8 @@ jobs:
         if: github.event_name == 'push'
         uses: mr-smithers-excellent/docker-build-push@v5
         with:
-          context: Ride-Sharing
-          dockerfile: Dockerfile
+          context: .
+          dockerfile: Ride-Sharing/Dockerfile
           image: debmalya06/ride-sharing-app
           tags: latest
           registry: docker.io

@@ -4,6 +4,6 @@ WORKDIR /app
 
 EXPOSE 8080
 
-COPY target/ride-sharing-app.jar app.jar
+COPY Ride-Sharing/target/ride-sharing-app.jar app.jar
 
 ENTRYPOINT ["java", "-jar", "app.jar"]
