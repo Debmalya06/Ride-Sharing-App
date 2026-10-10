@@ -33,7 +33,7 @@ jobs:
           context: .
           dockerfile: Ride-Sharing/Dockerfile
           image: debmalya06/ride-sharing-app
-          tags: latest
+          tags: latest,${{ github.sha }}
           registry: docker.io
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
