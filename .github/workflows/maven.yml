@@ -1,11 +1,13 @@
-
-name: Build & Push Docker Image
+name: Build, Push & Deploy SmartRide
 
 on:
   push:
     branches: ["DebmalyaPan"]
   pull_request:
     branches: ["DebmalyaPan"]
+
+permissions:
+  contents: read
 
 jobs:
   build:
@@ -26,7 +28,7 @@ jobs:
         working-directory: Ride-Sharing
         run: mvn -B clean package -DskipTests
 
-      - name: Build & Push Docker image
+      - name: Build & Push Docker Image
         if: github.event_name == 'push'
         uses: mr-smithers-excellent/docker-build-push@v5
         with:
@@ -38,6 +40,18 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Trigger Render Deploy
+      - name: Azure Login
         if: github.event_name == 'push'
-        run: curl -X POST "${{ secrets.HOOK_URL }}"
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Deploy to Azure Container Apps
+        if: github.event_name == 'push'
+        uses: azure/cli@v2
+        with:
+          inlineScript: |
+            az containerapp update \
+              --name ca-smartride-api \
+              --resource-group rg-smartride-prod \
+              --image docker.io/debmalya06/ride-sharing-app:${{ github.sha }}
