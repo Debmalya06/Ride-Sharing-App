@@ -17,14 +17,22 @@ public class JwtTokenProvider {
     private final long jwtExpirationInMs;
     private final long refreshExpirationInMs;
 
-    public JwtTokenProvider(
-            @Value("${jwt.secret}") String jwtSecret,
-            @Value("${jwt.expiration}") long jwtExpirationInMs,
-            @Value("${jwt.refreshExpiration}") long refreshExpirationInMs) {
-        this.key = Keys.hmacShaKeyFor(jwtSecret.getBytes());
-        this.jwtExpirationInMs = jwtExpirationInMs;
-        this.refreshExpirationInMs = refreshExpirationInMs;
+public JwtTokenProvider(
+        @Value("${jwt.secret:${JWT_SECRET:}}") String jwtSecret,
+        @Value("${jwt.expiration}") long jwtExpirationInMs,
+        @Value("${jwt.refreshExpiration}") long refreshExpirationInMs) {
+
+    if (jwtSecret == null || jwtSecret.isBlank()) {
+        throw new IllegalStateException(
+                "JWT secret is missing. Configure jwt.secret or JWT_SECRET.");
     }
+
+    this.key = Keys.hmacShaKeyFor(
+            jwtSecret.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+
+    this.jwtExpirationInMs = jwtExpirationInMs;
+    this.refreshExpirationInMs = refreshExpirationInMs;
+}
 
     // User token methods (existing)
     public String generateToken(String phoneNumber, Long userId, String role) {
